@@ -57,21 +57,25 @@ public class CopyObject {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
-        int total = ids.size();
-        long startTime = System.currentTimeMillis();
-        for(int i=0; i < total; i++) {
-            String id = (String)ids.get(i);
-            String command = new String(awsCommand);
-            String commandToRun = String.format(command, id, id);
+        if(awsCommand != null) {
+            int total = ids.size();
+            long startTime = System.currentTimeMillis();
+            for(int i=0; i < total; i++) {
+                String id = (String)ids.get(i);
+                String command = new String(awsCommand);
+                String commandToRun = String.format(command, id, id);
 
-            try {
-                runS3ShellCommand(commandToRun, new String[]{id});
+                try {
+                    runS3ShellCommand(commandToRun, new String[]{id});
 
-            } catch (Exception e) {
-                System.out.println("Failed for the command : " + command.toString());
-                System.out.println(e.getMessage());
+                } catch (Exception e) {
+                    System.out.println("Failed for the command : " + command.toString());
+                    System.out.println(e.getMessage());
+                }
+                printProgress(startTime, total, i+1);
             }
-            printProgress(startTime, total, i+1);
+        } else {
+            System.out.println("Please initialize the S3 variables properly.");
         }
         return failedForContent;
     }
