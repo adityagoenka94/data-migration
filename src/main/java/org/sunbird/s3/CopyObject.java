@@ -8,7 +8,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class CopyObject {
 
@@ -57,26 +57,39 @@ public class CopyObject {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
+        ExecutorService executor = Executors.newFixedThreadPool(20);
         if(awsCommand != null) {
             int total = ids.size();
             long startTime = System.currentTimeMillis();
+            List<Future<Boolean>> status = new ArrayList<>();
             for(int i=0; i < total; i++) {
                 String id = (String)ids.get(i);
                 String command = new String(awsCommand);
                 String commandToRun = String.format(command, id, id);
 
                 try {
-                    runS3ShellCommand(commandToRun, new String[]{id});
+                    status.add(executor.submit(new CallableThread(commandToRun, id)));
+//                    runS3ShellCommand(commandToRun, new String[]{id});
 
                 } catch (Exception e) {
                     System.out.println("Failed for the command : " + command.toString());
                     System.out.println(e.getMessage());
                 }
-                printProgress(startTime, total, i+1);
+            }
+
+            try {
+                for(int i=0; i < status.size(); i++) {
+                    boolean response = status.get(i).get();
+                    printProgress(startTime, total, i+1);
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                e.printStackTrace();
             }
         } else {
             System.out.println("Please initialize the S3 variables properly.");
         }
+        this.awaitTerminationAfterShutdown(executor);
         return failedForContent;
     }
 
@@ -160,7 +173,7 @@ public class CopyObject {
         return awsCommand.toString();
     }
 
-    public void runS3ShellCommand(String command, String[] currentContentIds) {
+    public boolean runS3ShellCommand(String command, String[] currentContentIds) {
         String result = "";
         try {
 //            System.out.println("Command Generated : " + command);
@@ -169,18 +182,23 @@ public class CopyObject {
             if(exitVal == 0) {
                 result = getResult(process);
                 verifyCurrentContentMigration(result, currentContentIds);
+                return true;
             }  else {
                 result = getResult(process);
                 throw new Exception("Command terminated abnormally : " + result);
             }
-
-        } catch (IOException e) {
-            addAllContentIdsForFailedList(currentContentIds);
-        } catch (InterruptedException e) {
-            addAllContentIdsForFailedList(currentContentIds);
-        } catch (Exception e) {
+        }
+//        catch (IOException e) {
+//            addAllContentIdsForFailedList(currentContentIds);
+//        } catch (InterruptedException e) {
+//            addAllContentIdsForFailedList(currentContentIds);
+//        }
+        catch (Exception e) {
+            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
+            e.printStackTrace();
             addAllContentIdsForFailedList(currentContentIds);
         }
+        return false;
     }
 
     public String getResult(Process process) throws IOException {
@@ -235,4 +253,38 @@ public class CopyObject {
 
         System.out.print(string);
     }
+
+    class CallableThread implements Callable<Boolean> {
+
+        private String id;
+        private String commandToRun;
+
+        public CallableThread(String commandToRun, String id) {
+            this.commandToRun = commandToRun;
+            this.id = id;
+        }
+
+        @Override
+        public Boolean call() {
+            try {
+                return runS3ShellCommand(commandToRun, new String[]{id});
+            } catch (Exception e) {
+                System.out.println("Some error occurred while running the aws script.");
+                return false;
+            }
+        }
+    }
+
+    public void awaitTerminationAfterShutdown(ExecutorService threadPool) {
+
+        try {
+            threadPool.shutdown();
+        } catch (Exception ex) {
+            threadPool.shutdownNow();
+            Thread.currentThread().interrupt();
+            System.out.println("An error occurred while shutting down the Executor Service : " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
 }

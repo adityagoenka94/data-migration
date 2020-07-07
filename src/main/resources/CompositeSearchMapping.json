@@ -5069,8 +5069,6 @@
         }
       },
       "number_of_shards": "5",
-      "provided_name": "compositesearch",
-      "creation_date": "1593152898181",
       "analysis": {
         "filter": {
           "mynGram": {
@@ -5109,11 +5107,7 @@
           }
         }
       },
-      "number_of_replicas": "1",
-      "uuid": "pda15CYoQBmB_xPs__WYfg",
-      "version": {
-        "created": "6020399"
-      }
+      "number_of_replicas": "1"
     }
   }
 }
