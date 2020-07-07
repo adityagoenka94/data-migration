@@ -26,7 +26,7 @@ public class App
         boolean check = true;
         while(check) {
             System.out.println("Enter 1 to get Content Id list from Neo4j");
-            System.out.println("Enter 2 to filter content and framework hierarchy data from Cassandra.");
+            System.out.println("Enter 2 to filter content and framework data from Cassandra.");
             System.out.println("Enter 3 to perform S3 data migration for all Neo4j Content except Assets");
             System.out.println("Enter 4 to perform S3 data migration for specific Content Ids");
             System.out.println("Enter 5 to Republish all Live contents of Neo4j.");
