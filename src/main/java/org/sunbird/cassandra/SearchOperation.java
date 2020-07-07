@@ -67,7 +67,7 @@ public class SearchOperation {
         try {
             System.out.println("Fetching content ids from content data");
             int count = 0;
-            int batchSize = 5;
+            int batchSize = 500;
             Session session = ConnectionManager.getSession();
             List<String> contentData = new ArrayList<>();
             long startTime = System.currentTimeMillis();
