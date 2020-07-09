@@ -166,18 +166,26 @@ public class CopyObject {
     private boolean runS3ShellCommand(String command, String currentContentIds) {
         String result = "";
         try {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command("/bin/sh", "-c", command);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
 //            System.out.println("Command Generated : " + command);
             System.out.println("running the request");
-            Process process = runtime.exec(new String[] {"/bin/sh", "-c", command});
+//            Process process = runtime.exec(new String[] {"/bin/sh", "-c", command});
+//            while (process.isAlive()) {
+//                Thread.sleep(1000);
+//            }
+            result = getResult(process);
             int exitVal = process.waitFor();
             if(exitVal == 0) {
                 System.out.println("received exit code 0");
-                result = getResult(process);
+//                result = getResult(process);
                 boolean status = verifyCurrentContentMigration(result, currentContentIds);
                 return status;
             }  else {
                 System.out.println("received exit code not 0");
-                result = getResult(process);
+//                result = getResult(process);
                 throw new Exception("Command terminated abnormally : " + result);
             }
         }
