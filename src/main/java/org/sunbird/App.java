@@ -90,7 +90,6 @@ public class App
                         System.out.println("Neo4j has no Content.");
                     }
                     break;
-                    break;
                 case 5:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
                     contentPublisher.publishAllContents();
