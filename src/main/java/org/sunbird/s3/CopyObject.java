@@ -67,10 +67,9 @@ public class CopyObject {
                 String contentId = entry.getKey();
                 String mimeType = entry.getValue();
 
-                String foldlerUrl = getContentFolderUrl(contentId, mimeType);
-
                 String command = new String(awsCommand);
-                String commandToRun = String.format(command, foldlerUrl, foldlerUrl);
+                String commandToRun = getContentFolderUrl(command, contentId, mimeType);
+
 
                 try {
                     status.add(executor.submit(new CallableThread(commandToRun, contentId)));
@@ -98,18 +97,21 @@ public class CopyObject {
         return failedForContent;
     }
 
-    private String getContentFolderUrl(String id, String mimeType) {
-        String folderUrl = "";
+    private String getContentFolderUrl(String command, String id, String mimeType) {
+        String newCommand = "";
         if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
-            folderUrl += "ecml/" + id;
+            newCommand = String.format(command, "ecml", "ecml");
+            newCommand += " --exclude \"*\" --include\"" + id + "*\"";
         } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
-            folderUrl += "html/" + id;
+            newCommand = String.format(command, "html", "html");
+            newCommand += " --exclude \"*\" --include\"" + id + "*\"";
         } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
-            folderUrl += "h5p/" + id;
+            newCommand = String.format(command, "h5p", "h5p");
+            newCommand += " --exclude \"*\" --include\"" + id + "*\"";
         } else {
-            folderUrl = id;
+            newCommand = String.format(command, id, id);
         }
-        return folderUrl;
+        return newCommand;
     }
 
 //    public String getAwsCommandForContentIdFolderMigration() {
@@ -159,7 +161,7 @@ public class CopyObject {
         String s3FolderTo = propertiesCache.getProperty("destination_s3folder");
         String regionTo = propertiesCache.getProperty("destination_region");
 
-        awsCommand.append("aws s3 cp ");
+        awsCommand.append("aws s3 cp");
         if(regionFrom != null && !regionFrom.isEmpty()) {
             awsCommand.append(" --source-region " + regionFrom);
         }
@@ -286,6 +288,7 @@ public class CopyObject {
         @Override
         public Boolean call() {
             try {
+                System.out.println("Command : " + commandToRun);
                 return runS3ShellCommand(commandToRun, new String[]{id});
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
