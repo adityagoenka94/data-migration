@@ -5,17 +5,16 @@ import org.sunbird.util.PropertiesCache;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class CopyObject {
 
     List<String> failedForContent = new ArrayList<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
-
+    String ecmlCommand;
+    String htmlCommand;
+    String h5pCommand;
 
     Runtime runtime = Runtime.getRuntime();
 //    public List<String> copyS3ContentDataForContentIds(List ids) {
@@ -63,20 +62,25 @@ public class CopyObject {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
             List<Future<Boolean>> status = new ArrayList<>();
+            Map<String, String> commandList = new HashMap<>();
             for(Map.Entry<String,String> entry : contentData.entrySet()) {
                 String contentId = entry.getKey();
                 String mimeType = entry.getValue();
 
                 String command = new String(awsCommand);
                 String commandToRun = getContentFolderUrl(command, contentId, mimeType);
+                commandList.put(command, commandToRun);
+            }
 
-
+            for(Map.Entry<String,String> entry : commandList.entrySet()) {
+                String contentId = entry.getKey();
+                String commandToRun = entry.getValue();
                 try {
                     status.add(executor.submit(new CallableThread(commandToRun, contentId)));
 //                    runS3ShellCommand(commandToRun, new String[]{id});
 
                 } catch (Exception e) {
-                    System.out.println("Failed for the command : " + command.toString());
+                    System.out.println("Failed for the command : " + commandToRun);
                     System.out.println(e.getMessage());
                 }
             }
@@ -100,14 +104,30 @@ public class CopyObject {
     private String getContentFolderUrl(String command, String id, String mimeType) {
         String newCommand = "";
         if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
-            newCommand = String.format(command, "ecml", "ecml");
-            newCommand += " --exclude \"*\" --include\"" + id + "*\"";
+            if (ecmlCommand == null || ecmlCommand.isEmpty()) {
+                newCommand = String.format(command, "ecml", "ecml");
+                newCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                ecmlCommand = newCommand;
+            } else {
+             ecmlCommand += " --include \"" + id + "*\"";
+            }
+
         } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
-            newCommand = String.format(command, "html", "html");
-            newCommand += " --exclude \"*\" --include\"" + id + "*\"";
+            if (htmlCommand == null || htmlCommand.isEmpty()) {
+                newCommand = String.format(command, "html", "html");
+                newCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                htmlCommand = newCommand;
+            } else {
+                htmlCommand += " --include \"" + id + "*\"";
+            }
         } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
-            newCommand = String.format(command, "h5p", "h5p");
-            newCommand += " --exclude \"*\" --include\"" + id + "*\"";
+            if (h5pCommand == null || h5pCommand.isEmpty()) {
+                newCommand = String.format(command, "h5p", "h5p");
+                newCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                h5pCommand = newCommand;
+            } else {
+                h5pCommand += " --include \"" + id + "*\"";
+            }
         } else {
             newCommand = String.format(command, id, id);
         }
@@ -290,6 +310,7 @@ public class CopyObject {
             try {
                 System.out.println("Command : " + commandToRun);
                 return runS3ShellCommand(commandToRun, new String[]{id});
+//                return true;
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
                 return false;
