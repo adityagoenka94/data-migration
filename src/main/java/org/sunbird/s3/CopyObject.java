@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 public class CopyObject {
@@ -53,22 +54,26 @@ public class CopyObject {
 //    }
 
 
-    public List<String> copyS3ContentDataForContentIdV2(List ids) {
+    public List<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(50);
         if(awsCommand != null) {
-            int total = ids.size();
+            int total = contentData.size();
             long startTime = System.currentTimeMillis();
             List<Future<Boolean>> status = new ArrayList<>();
-            for(int i=0; i < total; i++) {
-                String id = (String)ids.get(i);
+            for(Map.Entry<String,String> entry : contentData.entrySet()) {
+                String contentId = entry.getKey();
+                String mimeType = entry.getValue();
+
+                String foldlerUrl = getContentFolderUrl(contentId, mimeType);
+
                 String command = new String(awsCommand);
-                String commandToRun = String.format(command, id, id);
+                String commandToRun = String.format(command, foldlerUrl, foldlerUrl);
 
                 try {
-                    status.add(executor.submit(new CallableThread(commandToRun, id)));
+                    status.add(executor.submit(new CallableThread(commandToRun, contentId)));
 //                    runS3ShellCommand(commandToRun, new String[]{id});
 
                 } catch (Exception e) {
@@ -91,6 +96,20 @@ public class CopyObject {
         }
         this.awaitTerminationAfterShutdown(executor);
         return failedForContent;
+    }
+
+    private String getContentFolderUrl(String id, String mimeType) {
+        String folderUrl = "";
+        if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
+            folderUrl += "ecml/" + id;
+        } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
+            folderUrl += "html/" + id;
+        } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
+            folderUrl += "h5p/" + id;
+        } else {
+            folderUrl = id;
+        }
+        return folderUrl;
     }
 
 //    public String getAwsCommandForContentIdFolderMigration() {
@@ -159,14 +178,14 @@ public class CopyObject {
                 awsCommand.append(s3FolderFrom);
             }
 
-            awsCommand.append("%s");
+            awsCommand.append("%s/");
             awsCommand.append(" ");
 
             awsCommand.append(s3bucketTo);
             if(s3FolderTo !=null && !s3FolderTo.isEmpty()) {
                 awsCommand.append(s3FolderTo);
             }
-            awsCommand.append("%s");
+            awsCommand.append("%s/");
         }
 
         awsCommand.append(" --recursive");
@@ -194,8 +213,8 @@ public class CopyObject {
 //            addAllContentIdsForFailedList(currentContentIds);
 //        }
         catch (Exception e) {
-            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
-            e.printStackTrace();
+//            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
+//            e.printStackTrace();
             addAllContentIdsForFailedList(currentContentIds);
         }
         return false;

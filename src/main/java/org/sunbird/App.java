@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -38,6 +39,7 @@ public class App
             scanner.nextLine();
 
             List<String> failedContent = null;
+            Map<String, String> contentData;
             List<String> contentIds;
             switch(option) {
                 case 1:
@@ -45,10 +47,10 @@ public class App
                     String filePath = scanner.nextLine();
                     FileWriter fileWriter = new FileWriter(filePath);
                     PrintWriter printWriter = new PrintWriter(fileWriter);
-                    contentIds = operation.getContentIds();
+                    contentData = operation.getContentData();
 
-                    for (String id : contentIds) {
-                        printWriter.println(id);
+                    for (Map.Entry<String,String> entry : contentData.entrySet()) {
+                        printWriter.println(entry.getKey() + "," + entry.getValue());
                     }
                     printWriter.close();
                     fileWriter.close();
@@ -61,9 +63,9 @@ public class App
                     deleteOperation.deleteContentData();
                     break;
                 case 3:
-                    contentIds = operation.getContentIds();
-                    if(contentIds.size() > 0) {
-                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentIds);
+                    contentData = operation.getContentData();
+                    if(contentData.size() > 0) {
+                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentData);
                         if(failedContent.size() > 0) {
                             System.out.println("Failed for content with IDS : " + failedContent);
                         } else {
@@ -75,19 +77,20 @@ public class App
                     }
                     break;
                 case 4:
-                    contentIds = getInputContentIds(scanner);
-                    if(contentIds != null && contentIds.size() > 0) {
-                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentIds);
-                        if(failedContent.size() > 0) {
-                            System.out.println();
-                            System.out.println("Failed for content with IDS : " + failedContent);
-                        } else {
-                            System.out.println();
-                            System.out.println("Process completed Successfully for all Content Ids.");
-                        }
-                    } else {
-                        System.out.println("Process provide some content Ids.");
-                    }
+                    System.out.println("Removed due to some complications");
+//                    contentIds = getInputContentIds(scanner);
+//                    if(contentIds != null && contentIds.size() > 0) {
+//                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentIds);
+//                        if(failedContent.size() > 0) {
+//                            System.out.println();
+//                            System.out.println("Failed for content with IDS : " + failedContent);
+//                        } else {
+//                            System.out.println();
+//                            System.out.println("Process completed Successfully for all Content Ids.");
+//                        }
+//                    } else {
+//                        System.out.println("Process provide some content Ids.");
+//                    }
                     break;
                 case 5:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
