@@ -10,53 +10,20 @@ import java.util.concurrent.*;
 
 public class CopyObject {
 
-    List<String> failedForContent = new ArrayList<>();
+    Set<String> failedForContent = new TreeSet<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
-    String ecmlCommand;
-    List<String> ecmlIds = new ArrayList<>();
-    String htmlCommand;
-    List<String> htmlIds = new ArrayList<>();
-    String h5pCommand;
-    List<String> h5pIds = new ArrayList<>();
+    String[] mimeTypesNotToHandle = new String[]{
+            "application/vnd.ekstep.h5p-archive",
+            "application/vnd.ekstep.html-archive",
+            "application/vnd.ekstep.ecml-archive",
+            "text/x-url",
+            "video/x-youtube",
+            "application/vnd.ekstep.content-collection"};
 
     Runtime runtime = Runtime.getRuntime();
-//    public List<String> copyS3ContentDataForContentIds(List ids) {
-//
-//        String awsCommand = getAwsCommandForContentIdFolderMigration();
-//        System.out.println("AWS build command : " + awsCommand);
-//        int total = ids.size();
-//        int current = 0;
-//        long startTime = System.currentTimeMillis();
-//        while(current < total) {
-//            int batch;
-//            if(current+10 <= total) {
-//                batch = 10;
-//            } else {
-//                batch = total - current;
-//            }
-//
-//            StringBuilder command = new StringBuilder(awsCommand);
-//            String currentContents[] = new String[batch];
-//            for(int i = 0; i < batch; i++) {
-//                currentContents[i] = (String)ids.get(current+i);
-//                command.append(" --include '").append((String)ids.get(current+i)).append( "*'");
-//            }
-//
-//            try {
-//                runS3ShellCommand(command.toString(), currentContents);
-//
-//            } catch (Exception e) {
-//                System.out.println("Failed for the command : " + command.toString());
-//                System.out.println(e.getMessage());
-//            }
-//            current += batch;
-//            printProgress(startTime, total, current);
-//        }
-//        return failedForContent;
-//    }
 
 
-    public List<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData, boolean mimeStatus) {
+    public Set<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
@@ -71,7 +38,7 @@ public class CopyObject {
                 String mimeType = entry.getValue();
 
                 String command = new String(awsCommand);
-                String commandToRun = getContentFolderUrl(command, contentId, mimeType, mimeStatus);
+                String commandToRun = getContentFolderUrl(command, contentId, mimeType);
                 if(!commandToRun.isEmpty()) {
                     commandList.put(contentId, commandToRun);
                 }
@@ -91,12 +58,6 @@ public class CopyObject {
                 }
             }
 
-            if(mimeStatus) {
-                status.add(executor.submit(new CallableThread(htmlCommand, htmlIds)));
-                status.add(executor.submit(new CallableThread(ecmlCommand, ecmlIds)));
-                status.add(executor.submit(new CallableThread(h5pCommand, htmlIds)));
-            }
-
             try {
                 for(int i=0; i < status.size(); i++) {
                     boolean response = status.get(i).get();
@@ -113,39 +74,12 @@ public class CopyObject {
         return failedForContent;
     }
 
-    private String getContentFolderUrl(String command, String id, String mimeType, boolean mimeStatus) {
+    private String getContentFolderUrl(String command, String id, String mimeType) {
         String newCommand = "";
-        if(mimeStatus) {
-            if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
-                if (ecmlCommand == null || ecmlCommand.isEmpty()) {
-                    ecmlCommand = String.format(command, "ecml", "ecml");
-                    ecmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
-                } else {
-                    ecmlCommand += " --include \"" + id + "*\"";
-                }
-                ecmlIds.add(id);
-            } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
-                if (htmlCommand == null || htmlCommand.isEmpty()) {
-                    htmlCommand = String.format(command, "html", "html");
-                    htmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
-                } else {
-                    htmlCommand += " --include \"" + id + "*\"";
-                }
-                htmlIds.add(id);
-            } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
-                if (h5pCommand == null || h5pCommand.isEmpty()) {
-                    h5pCommand = String.format(command, "h5p", "h5p");
-                    h5pCommand += " --exclude \"*\" --include \"" + id + "*\"";
-                } else {
-                    h5pCommand += " --include \"" + id + "*\"";
-                }
-                h5pIds.add(id);
-            }
-        } else {
-            if(!mimeType.equals("application/vnd.ekstep.ecml-archive") && !mimeType.equals("application/vnd.ekstep.html-archive") && !mimeType.equals("application/vnd.ekstep.h5p-archive")) {
+        List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
+        if(! notMime.contains(mimeType)) {
                 newCommand = String.format(command, id, id);
             }
-        }
         return newCommand;
     }
 
@@ -229,7 +163,7 @@ public class CopyObject {
         return awsCommand.toString();
     }
 
-    public boolean runS3ShellCommand(String command, String[] currentContentIds) {
+    public boolean runS3ShellCommand(String command, String currentContentIds) {
         String result = "";
         try {
 //            System.out.println("Command Generated : " + command);
@@ -237,8 +171,8 @@ public class CopyObject {
             int exitVal = process.waitFor();
             if(exitVal == 0) {
                 result = getResult(process);
-                verifyCurrentContentMigration(result, currentContentIds);
-                return true;
+                boolean status = verifyCurrentContentMigration(result, currentContentIds);
+                return status;
             }  else {
                 result = getResult(process);
                 throw new Exception("Command terminated abnormally : " + result);
@@ -252,7 +186,7 @@ public class CopyObject {
         catch (Exception e) {
 //            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
 //            e.printStackTrace();
-            addAllContentIdsForFailedList(currentContentIds);
+            addAllContentIdForFailedList(currentContentIds);
         }
         return false;
     }
@@ -269,20 +203,17 @@ public class CopyObject {
         return result.toString();
     }
 
-    public void verifyCurrentContentMigration(String result, String[] currentContentIds) {
-        for(String contentId : currentContentIds) {
-            if (result.indexOf(contentId) >= 0) {
-
-            } else {
-                failedForContent.add(contentId);
-            }
+    public boolean verifyCurrentContentMigration(String result, String contentId) {
+        if (result.indexOf(contentId) >= 0) {
+            return true;
+        } else {
+            failedForContent.add(contentId);
+            return false;
         }
     }
 
-    public void addAllContentIdsForFailedList(String[] currentContentIds) {
-        for(String contentId : currentContentIds) {
+    public void addAllContentIdForFailedList(String contentId) {
             failedForContent.add(contentId);
-        }
     }
 
     private static void printProgress(long startTime, long total, long current) {
@@ -313,7 +244,6 @@ public class CopyObject {
     class CallableThread implements Callable<Boolean> {
 
         private String id;
-        private List<String> ids;
         private String commandToRun;
 
         public CallableThread(String commandToRun, String id) {
@@ -321,24 +251,14 @@ public class CopyObject {
             this.id = id;
         }
 
-        public CallableThread(String commandToRun, List<String> ids) {
-            this.commandToRun = commandToRun;
-            this.ids = ids;
-        }
 
         @Override
         public Boolean call() {
             try {
                 System.out.println("Command : " + commandToRun);
-                if(ids == null || ids.size() == 0) {
-                    return runS3ShellCommand(commandToRun, new String[]{id});
-//                    return true;
-                } else {
-                    String[] copy = new String[ids.size()];
-                    copy = ids.toArray(copy);
-                    return runS3ShellCommand(commandToRun, copy);
-//                    return true;
-                }
+                return runS3ShellCommand(commandToRun, id);
+//                return true;
+
 
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
@@ -356,6 +276,112 @@ public class CopyObject {
             Thread.currentThread().interrupt();
             System.out.println("An error occurred while shutting down the Executor Service : " + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+
+
+    public Set<String> copyS3ContentDataForMimes(Map<String, List> contentData) {
+
+        String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
+        System.out.println("AWS build command : " + awsCommand);
+        ExecutorService executor = Executors.newFixedThreadPool(20);
+        if(awsCommand != null) {
+//            int total = contentData.size();
+            long startTime = System.currentTimeMillis();
+            List<Future<Boolean>> status = new ArrayList<>();
+//            Map<String, String> commandList = new HashMap<>();
+            for(Map.Entry<String,List> entry : contentData.entrySet()) {
+                String mimeType = entry.getKey();
+                List ids = entry.getValue();
+                for(Object iterator : ids) {
+                    String id = (String)iterator;
+                    String command = new String(awsCommand);
+                    status.add(executor.submit(new MimeCallableThread(command, id, mimeType)));
+                }
+            }
+
+
+            try {
+                int statusSize = status.size();
+                for(int i=0; i <statusSize; i++) {
+                    boolean response = status.get(i).get();
+                    printProgress(startTime, statusSize, i+1);
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Please initialize the S3 variables properly.");
+        }
+        this.awaitTerminationAfterShutdown(executor);
+        return failedForContent;
+    }
+
+    private String getContentS3UrlForMime(String command, String id, String mimeType, String iterator) {
+        String newCommand = "";
+        String folder = "";
+        if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
+            folder = "ecml/" + id + "-" + iterator;
+        } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
+            folder = "html/" + id + "-" + iterator;
+        } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
+            folder = "h5p/" + id + "-" + iterator;
+        } else {
+            return "";
+        }
+        newCommand = String.format(command, folder, folder);
+        return newCommand;
+    }
+
+    class MimeCallableThread implements Callable<Boolean> {
+
+        private String id;
+        private String command;
+        private String mimeType;
+
+        public MimeCallableThread(String command, String id, String mimeType) {
+            this.command = command;
+            this.id = id;
+            this.mimeType = mimeType;
+        }
+
+
+        @Override
+        public Boolean call() {
+            try {
+                int i=1;
+                boolean status = true;
+                while(status) {
+                    String folderId = i + ".0";
+                    String commandToRun = getContentS3UrlForMime(command, id, mimeType, folderId);
+                    System.out.println("Command : " + commandToRun);
+                    boolean check = runS3ShellCommand(commandToRun, id);
+//                    check = false;
+                    if(check) {
+                        i++;
+                    } else {
+                        status = false;
+                    }
+                }
+
+                String commandToRun = getContentS3UrlForMime(command, id, mimeType, "latest");
+                System.out.println("Command : " + commandToRun);
+                boolean check1 = runS3ShellCommand(commandToRun, id);
+//                boolean check1 = true;
+                commandToRun = getContentS3UrlForMime(command, id, mimeType, "snapshot");
+                System.out.println("Command : " + commandToRun);
+                boolean check2 = runS3ShellCommand(commandToRun, id);
+
+                if(check1) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (Exception e) {
+                System.out.println("Some error occurred while running the aws script.");
+                return false;
+            }
         }
     }
 

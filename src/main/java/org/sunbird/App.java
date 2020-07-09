@@ -6,12 +6,11 @@ import org.sunbird.publish.Neo4jLiveContentPublisher;
 import org.sunbird.s3.CopyObject;
 //import org.sunbird.s3.CopyObjectThroughSDK;
 
+import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Hello world!
@@ -38,9 +37,7 @@ public class App
             int option = scanner.nextInt();
             scanner.nextLine();
 
-            List<String> failedContent = null;
             Map<String, String> contentData;
-            List<String> contentIds;
             switch(option) {
                 case 1:
                     System.out.println("Enter CSV file Path");
@@ -65,9 +62,9 @@ public class App
                 case 3:
                     contentData = operation.getContentData();
                     if(contentData.size() > 0) {
-                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentData, false);
-                        if(failedContent.size() > 0) {
-                            System.out.println("Failed for content with IDS : " + failedContent);
+                        Set<String> contentFailed = s3CopyObject.copyS3ContentDataForContentIdV2(contentData);
+                        if(contentFailed.size() > 0) {
+                            System.out.println("Failed for content with IDS : " + contentFailed);
                         } else {
                             System.out.println("Process completed Successfully for all Content of Neo4j.");
                         }
@@ -77,11 +74,14 @@ public class App
                     }
                     break;
                 case 4:
-                    contentData = operation.getContentData();
-                    if(contentData.size() > 0) {
-                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentData, true);
-                        if(failedContent.size() > 0) {
-                            System.out.println("Failed for content with IDS : " + failedContent);
+                    Map<String, List> contentDataForMime = operation.getContentDataForMimes();
+                    if(contentDataForMime.size() > 0) {
+                        Set<String> contentFailed = s3CopyObject.copyS3ContentDataForMimes(contentDataForMime);
+                        if(contentFailed.size() > 0) {
+                            System.out.println();
+                            System.out.println("Failed for content with IDS : " + contentFailed);
+                            writeTofile(contentFailed);
+
                         } else {
                             System.out.println("Process completed Successfully for all Content of Neo4j.");
                         }
@@ -140,6 +140,19 @@ public class App
             return contentIds;
         } else {
             return null;
+        }
+    }
+
+    public static void writeTofile(Set<String> data) {
+        String fileName = "Error_" + System.currentTimeMillis();
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.write(data.toString());
+
+            writer.close();
+        } catch (Exception e) {
+            System.out.println("Failed to Write the File");
+            e.printStackTrace();
         }
     }
 }
