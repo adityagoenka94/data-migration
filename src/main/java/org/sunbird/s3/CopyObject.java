@@ -56,7 +56,7 @@ public class CopyObject {
 //    }
 
 
-    public List<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
+    public List<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData, boolean mimeStatus) {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
@@ -71,7 +71,7 @@ public class CopyObject {
                 String mimeType = entry.getValue();
 
                 String command = new String(awsCommand);
-                String commandToRun = getContentFolderUrl(command, contentId, mimeType);
+                String commandToRun = getContentFolderUrl(command, contentId, mimeType, mimeStatus);
                 if(!commandToRun.isEmpty()) {
                     commandList.put(contentId, commandToRun);
                 }
@@ -91,9 +91,11 @@ public class CopyObject {
                 }
             }
 
-            status.add(executor.submit(new CallableThread(htmlCommand, htmlIds)));
-            status.add(executor.submit(new CallableThread(ecmlCommand, ecmlIds)));
-            status.add(executor.submit(new CallableThread(h5pCommand, htmlIds)));
+            if(mimeStatus) {
+                status.add(executor.submit(new CallableThread(htmlCommand, htmlIds)));
+                status.add(executor.submit(new CallableThread(ecmlCommand, ecmlIds)));
+                status.add(executor.submit(new CallableThread(h5pCommand, htmlIds)));
+            }
 
             try {
                 for(int i=0; i < status.size(); i++) {
@@ -111,37 +113,38 @@ public class CopyObject {
         return failedForContent;
     }
 
-    private String getContentFolderUrl(String command, String id, String mimeType) {
+    private String getContentFolderUrl(String command, String id, String mimeType, boolean mimeStatus) {
         String newCommand = "";
-        if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
-            if (ecmlCommand == null || ecmlCommand.isEmpty()) {
-                ecmlCommand = String.format(command, "ecml", "ecml");
-                ecmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
-//                ecmlCommand = newCommand;
-            } else {
-             ecmlCommand += " --include \"" + id + "*\"";
+        if(mimeStatus) {
+            if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
+                if (ecmlCommand == null || ecmlCommand.isEmpty()) {
+                    ecmlCommand = String.format(command, "ecml", "ecml");
+                    ecmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                } else {
+                    ecmlCommand += " --include \"" + id + "*\"";
+                }
+                ecmlIds.add(id);
+            } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
+                if (htmlCommand == null || htmlCommand.isEmpty()) {
+                    htmlCommand = String.format(command, "html", "html");
+                    htmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                } else {
+                    htmlCommand += " --include \"" + id + "*\"";
+                }
+                htmlIds.add(id);
+            } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
+                if (h5pCommand == null || h5pCommand.isEmpty()) {
+                    h5pCommand = String.format(command, "h5p", "h5p");
+                    h5pCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                } else {
+                    h5pCommand += " --include \"" + id + "*\"";
+                }
+                h5pIds.add(id);
             }
-            ecmlIds.add(id);
-        } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
-            if (htmlCommand == null || htmlCommand.isEmpty()) {
-                htmlCommand = String.format(command, "html", "html");
-                htmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
-//                htmlCommand = newCommand;
-            } else {
-                htmlCommand += " --include \"" + id + "*\"";
-            }
-            htmlIds.add(id);
-        } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
-            if (h5pCommand == null || h5pCommand.isEmpty()) {
-                h5pCommand = String.format(command, "h5p", "h5p");
-                h5pCommand += " --exclude \"*\" --include \"" + id + "*\"";
-                h5pCommand = newCommand;
-            } else {
-                h5pCommand += " --include \"" + id + "*\"";
-            }
-            h5pIds.add(id);
         } else {
-            newCommand = String.format(command, id, id);
+            if(!mimeType.equals("application/vnd.ekstep.ecml-archive") && !mimeType.equals("application/vnd.ekstep.html-archive") && !mimeType.equals("application/vnd.ekstep.h5p-archive")) {
+                newCommand = String.format(command, id, id);
+            }
         }
         return newCommand;
     }

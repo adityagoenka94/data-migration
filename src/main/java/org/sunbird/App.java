@@ -28,8 +28,8 @@ public class App
         while(check) {
             System.out.println("Enter 1 to get Content Id list from Neo4j");
             System.out.println("Enter 2 to filter content and framework data from Cassandra.");
-            System.out.println("Enter 3 to perform S3 data migration for all Neo4j Content except Assets");
-            System.out.println("Enter 4 to perform S3 data migration for specific Content Ids");
+            System.out.println("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType.");
+            System.out.println("Enter 4 to perform S3 data migration for Neo4j Content for ecml, html and h5p mimeType only.");
             System.out.println("Enter 5 to Republish all Live contents of Neo4j.");
             System.out.println("Enter 6 to EXIT");
 //        System.out.println("Enter 5 to perform data migration for specific Content Ids Using SDK");
@@ -65,7 +65,7 @@ public class App
                 case 3:
                     contentData = operation.getContentData();
                     if(contentData.size() > 0) {
-                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentData);
+                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentData, false);
                         if(failedContent.size() > 0) {
                             System.out.println("Failed for content with IDS : " + failedContent);
                         } else {
@@ -77,20 +77,19 @@ public class App
                     }
                     break;
                 case 4:
-                    System.out.println("Removed due to some complications");
-//                    contentIds = getInputContentIds(scanner);
-//                    if(contentIds != null && contentIds.size() > 0) {
-//                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentIds);
-//                        if(failedContent.size() > 0) {
-//                            System.out.println();
-//                            System.out.println("Failed for content with IDS : " + failedContent);
-//                        } else {
-//                            System.out.println();
-//                            System.out.println("Process completed Successfully for all Content Ids.");
-//                        }
-//                    } else {
-//                        System.out.println("Process provide some content Ids.");
-//                    }
+                    contentData = operation.getContentData();
+                    if(contentData.size() > 0) {
+                        failedContent = s3CopyObject.copyS3ContentDataForContentIdV2(contentData, true);
+                        if(failedContent.size() > 0) {
+                            System.out.println("Failed for content with IDS : " + failedContent);
+                        } else {
+                            System.out.println("Process completed Successfully for all Content of Neo4j.");
+                        }
+                    }
+                    else {
+                        System.out.println("Neo4j has no Content.");
+                    }
+                    break;
                     break;
                 case 5:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
