@@ -167,13 +167,16 @@ public class CopyObject {
         String result = "";
         try {
 //            System.out.println("Command Generated : " + command);
-            Process process = runtime.exec(new String[] {"/bin/sh", "-c",command});
+            System.out.println("running the request");
+            Process process = runtime.exec(new String[] {"/bin/sh", "-c", command});
             int exitVal = process.waitFor();
             if(exitVal == 0) {
+                System.out.println("received exit code 0");
                 result = getResult(process);
                 boolean status = verifyCurrentContentMigration(result, currentContentIds);
                 return status;
             }  else {
+                System.out.println("received exit code not 0");
                 result = getResult(process);
                 throw new Exception("Command terminated abnormally : " + result);
             }
@@ -184,8 +187,8 @@ public class CopyObject {
 //            addAllContentIdsForFailedList(currentContentIds);
 //        }
         catch (Exception e) {
-//            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
-//            e.printStackTrace();
+            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
+            e.printStackTrace();
             addAllContentIdForFailedList(currentContentIds);
         }
         return false;
@@ -200,6 +203,7 @@ public class CopyObject {
         }
 
 //        System.out.println(result.toString());
+
         return result.toString();
     }
 
@@ -282,39 +286,47 @@ public class CopyObject {
 
     public Set<String> copyS3ContentDataForMimes(Map<String, List> contentData) {
 
-        String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
-        System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
-        if(awsCommand != null) {
+        try {
+            String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
+            System.out.println("AWS build command : " + awsCommand);
+            ExecutorService executor = Executors.newFixedThreadPool(20);
+            if (awsCommand != null) {
 //            int total = contentData.size();
-            long startTime = System.currentTimeMillis();
-            List<Future<Boolean>> status = new ArrayList<>();
+                long startTime = System.currentTimeMillis();
+                List<Future<Boolean>> status = new ArrayList<>();
 //            Map<String, String> commandList = new HashMap<>();
-            for(Map.Entry<String,List> entry : contentData.entrySet()) {
-                String mimeType = entry.getKey();
-                List ids = entry.getValue();
-                for(Object iterator : ids) {
-                    String id = (String)iterator;
-                    String command = new String(awsCommand);
-                    status.add(executor.submit(new MimeCallableThread(command, id, mimeType)));
+                for (Map.Entry<String, List> entry : contentData.entrySet()) {
+                    String mimeType = entry.getKey();
+                    System.out.println("Making request for MimeType : " + mimeType);
+                    List ids = entry.getValue();
+                    for (Object iterator : ids) {
+                        String id = (String) iterator;
+                        String command = new String(awsCommand);
+                        System.out.println("Making request for id : " + id);
+                        new MimeCallableThread(command, id, mimeType).run();
+//                        status.add(executor.submit(new MimeCallableThread(command, id, mimeType)));
+                    }
                 }
-            }
 
 
-            try {
-                int statusSize = status.size();
-                for(int i=0; i <statusSize; i++) {
-                    boolean response = status.get(i).get();
-                    printProgress(startTime, statusSize, i+1);
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
-                e.printStackTrace();
+//                try {
+//                    int statusSize = status.size();
+//                    for (int i = 0; i < statusSize; i++) {
+//                        boolean response = status.get(i).get();
+//                        printProgress(startTime, statusSize, i + 1);
+//                    }
+//                } catch (InterruptedException | ExecutionException e) {
+//                    System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+//                    e.printStackTrace();
+//                }
+            } else {
+                System.out.println("Please initialize the S3 variables properly.");
             }
-        } else {
-            System.out.println("Please initialize the S3 variables properly.");
+            this.awaitTerminationAfterShutdown(executor);
+        } catch (Exception e) {
+            System.out.println("Failed in copyS3ContentDataForMimes : " + e.getMessage());
+            e.printStackTrace();
         }
-        this.awaitTerminationAfterShutdown(executor);
         return failedForContent;
     }
 
@@ -338,7 +350,7 @@ public class CopyObject {
         return newCommand;
     }
 
-    class MimeCallableThread implements Callable<Boolean> {
+    class MimeCallableThread implements Runnable {
 
         private String id;
         private String command;
@@ -352,7 +364,7 @@ public class CopyObject {
 
 
         @Override
-        public Boolean call() {
+        public void run() {
             try {
                 int i=1;
                 boolean status = true;
@@ -377,10 +389,10 @@ public class CopyObject {
                 System.out.println("Command : " + commandToRun);
                 boolean check2 = runS3ShellCommand(commandToRun, id);
 
-                return check1;
+//                return check1;
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
-                return false;
+//                return false;
             }
         }
     }
