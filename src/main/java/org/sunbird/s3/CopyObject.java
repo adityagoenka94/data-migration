@@ -72,7 +72,9 @@ public class CopyObject {
 
                 String command = new String(awsCommand);
                 String commandToRun = getContentFolderUrl(command, contentId, mimeType);
-                commandList.put(contentId, commandToRun);
+                if(!commandToRun.isEmpty()) {
+                    commandList.put(contentId, commandToRun);
+                }
             }
 
 
@@ -113,26 +115,26 @@ public class CopyObject {
         String newCommand = "";
         if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
             if (ecmlCommand == null || ecmlCommand.isEmpty()) {
-                newCommand = String.format(command, "ecml", "ecml");
-                newCommand += " --exclude \"*\" --include \"" + id + "*\"";
-                ecmlCommand = newCommand;
+                ecmlCommand = String.format(command, "ecml", "ecml");
+                ecmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
+//                ecmlCommand = newCommand;
             } else {
              ecmlCommand += " --include \"" + id + "*\"";
             }
             ecmlIds.add(id);
         } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
             if (htmlCommand == null || htmlCommand.isEmpty()) {
-                newCommand = String.format(command, "html", "html");
-                newCommand += " --exclude \"*\" --include \"" + id + "*\"";
-                htmlCommand = newCommand;
+                htmlCommand = String.format(command, "html", "html");
+                htmlCommand += " --exclude \"*\" --include \"" + id + "*\"";
+//                htmlCommand = newCommand;
             } else {
                 htmlCommand += " --include \"" + id + "*\"";
             }
             htmlIds.add(id);
         } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
             if (h5pCommand == null || h5pCommand.isEmpty()) {
-                newCommand = String.format(command, "h5p", "h5p");
-                newCommand += " --exclude \"*\" --include \"" + id + "*\"";
+                h5pCommand = String.format(command, "h5p", "h5p");
+                h5pCommand += " --exclude \"*\" --include \"" + id + "*\"";
                 h5pCommand = newCommand;
             } else {
                 h5pCommand += " --include \"" + id + "*\"";
@@ -326,13 +328,13 @@ public class CopyObject {
             try {
                 System.out.println("Command : " + commandToRun);
                 if(ids == null || ids.size() == 0) {
-//                    return runS3ShellCommand(commandToRun, new String[]{id});
-                    return true;
+                    return runS3ShellCommand(commandToRun, new String[]{id});
+//                    return true;
                 } else {
                     String[] copy = new String[ids.size()];
                     copy = ids.toArray(copy);
-//                    return runS3ShellCommand(commandToRun, copy);
-                    return true;
+                    return runS3ShellCommand(commandToRun, copy);
+//                    return true;
                 }
 
             } catch (Exception e) {
