@@ -10,9 +10,9 @@ import java.util.concurrent.*;
 
 public class CopyObject {
 
-    Set<String> failedForContent = new TreeSet<>();
+    private Set<String> failedForContent = new TreeSet<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
-    String[] mimeTypesNotToHandle = new String[]{
+    private String[] mimeTypesNotToHandle = new String[]{
             "application/vnd.ekstep.h5p-archive",
             "application/vnd.ekstep.html-archive",
             "application/vnd.ekstep.ecml-archive",
@@ -20,7 +20,7 @@ public class CopyObject {
             "video/x-youtube",
             "application/vnd.ekstep.content-collection"};
 
-    Runtime runtime = Runtime.getRuntime();
+    private Runtime runtime = Runtime.getRuntime();
 
 
     public Set<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
@@ -121,7 +121,7 @@ public class CopyObject {
 //        return awsCommand.toString();
 //    }
 
-    public String getAwsCommandForContentIdFolderMigrationV2() {
+    private String getAwsCommandForContentIdFolderMigrationV2() {
         StringBuilder awsCommand = new StringBuilder();
         String s3bucketFrom = propertiesCache.getProperty("source_s3bucket");
         String s3FolderFrom = propertiesCache.getProperty("source_s3folder");
@@ -132,11 +132,11 @@ public class CopyObject {
 
         awsCommand.append("aws s3 cp");
         if(regionFrom != null && !regionFrom.isEmpty()) {
-            awsCommand.append(" --source-region " + regionFrom);
+            awsCommand.append(" --source-region ").append(regionFrom);
         }
 
         if(regionTo != null && !regionTo.isEmpty()) {
-            awsCommand.append(" --region " + regionTo);
+            awsCommand.append(" --region ").append(regionTo);
         }
 
         awsCommand.append(" ");
@@ -163,7 +163,7 @@ public class CopyObject {
         return awsCommand.toString();
     }
 
-    public boolean runS3ShellCommand(String command, String currentContentIds) {
+    private boolean runS3ShellCommand(String command, String currentContentIds) {
         String result = "";
         try {
 //            System.out.println("Command Generated : " + command);
@@ -191,7 +191,7 @@ public class CopyObject {
         return false;
     }
 
-    public String getResult(Process process) throws IOException {
+    private String getResult(Process process) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = "";
         StringBuilder result = new StringBuilder();
@@ -203,8 +203,8 @@ public class CopyObject {
         return result.toString();
     }
 
-    public boolean verifyCurrentContentMigration(String result, String contentId) {
-        if (result.indexOf(contentId) >= 0) {
+    private boolean verifyCurrentContentMigration(String result, String contentId) {
+        if (result.contains(contentId)) {
             return true;
         } else {
             failedForContent.add(contentId);
@@ -212,7 +212,7 @@ public class CopyObject {
         }
     }
 
-    public void addAllContentIdForFailedList(String contentId) {
+    private void addAllContentIdForFailedList(String contentId) {
             failedForContent.add(contentId);
     }
 
@@ -267,7 +267,7 @@ public class CopyObject {
         }
     }
 
-    public void awaitTerminationAfterShutdown(ExecutorService threadPool) {
+    private void awaitTerminationAfterShutdown(ExecutorService threadPool) {
 
         try {
             threadPool.shutdown();
@@ -321,14 +321,18 @@ public class CopyObject {
     private String getContentS3UrlForMime(String command, String id, String mimeType, String iterator) {
         String newCommand = "";
         String folder = "";
-        if(mimeType.equals("application/vnd.ekstep.ecml-archive")) {
-            folder = "ecml/" + id + "-" + iterator;
-        } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
-            folder = "html/" + id + "-" + iterator;
-        } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
-            folder = "h5p/" + id + "-" + iterator;
-        } else {
-            return "";
+        switch (mimeType) {
+            case "application/vnd.ekstep.ecml-archive":
+                folder = "ecml/" + id + "-" + iterator;
+                break;
+            case "application/vnd.ekstep.html-archive":
+                folder = "html/" + id + "-" + iterator;
+                break;
+            case "application/vnd.ekstep.h5p-archive":
+                folder = "h5p/" + id + "-" + iterator;
+                break;
+            default:
+                return "";
         }
         newCommand = String.format(command, folder, folder);
         return newCommand;
@@ -373,11 +377,7 @@ public class CopyObject {
                 System.out.println("Command : " + commandToRun);
                 boolean check2 = runS3ShellCommand(commandToRun, id);
 
-                if(check1) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return check1;
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
                 return false;
