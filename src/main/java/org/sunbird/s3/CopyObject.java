@@ -13,8 +13,11 @@ public class CopyObject {
     List<String> failedForContent = new ArrayList<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
     String ecmlCommand;
+    List<String> ecmlIds = new ArrayList<>();
     String htmlCommand;
+    List<String> htmlIds = new ArrayList<>();
     String h5pCommand;
+    List<String> h5pIds = new ArrayList<>();
 
     Runtime runtime = Runtime.getRuntime();
 //    public List<String> copyS3ContentDataForContentIds(List ids) {
@@ -69,8 +72,9 @@ public class CopyObject {
 
                 String command = new String(awsCommand);
                 String commandToRun = getContentFolderUrl(command, contentId, mimeType);
-                commandList.put(command, commandToRun);
+                commandList.put(contentId, commandToRun);
             }
+
 
             for(Map.Entry<String,String> entry : commandList.entrySet()) {
                 String contentId = entry.getKey();
@@ -84,6 +88,10 @@ public class CopyObject {
                     System.out.println(e.getMessage());
                 }
             }
+
+            status.add(executor.submit(new CallableThread(htmlCommand, htmlIds)));
+            status.add(executor.submit(new CallableThread(ecmlCommand, ecmlIds)));
+            status.add(executor.submit(new CallableThread(h5pCommand, htmlIds)));
 
             try {
                 for(int i=0; i < status.size(); i++) {
@@ -111,7 +119,7 @@ public class CopyObject {
             } else {
              ecmlCommand += " --include \"" + id + "*\"";
             }
-
+            ecmlIds.add(id);
         } else if(mimeType.equals("application/vnd.ekstep.html-archive")) {
             if (htmlCommand == null || htmlCommand.isEmpty()) {
                 newCommand = String.format(command, "html", "html");
@@ -120,6 +128,7 @@ public class CopyObject {
             } else {
                 htmlCommand += " --include \"" + id + "*\"";
             }
+            htmlIds.add(id);
         } else if(mimeType.equals("application/vnd.ekstep.h5p-archive")) {
             if (h5pCommand == null || h5pCommand.isEmpty()) {
                 newCommand = String.format(command, "h5p", "h5p");
@@ -128,6 +137,7 @@ public class CopyObject {
             } else {
                 h5pCommand += " --include \"" + id + "*\"";
             }
+            h5pIds.add(id);
         } else {
             newCommand = String.format(command, id, id);
         }
@@ -298,6 +308,7 @@ public class CopyObject {
     class CallableThread implements Callable<Boolean> {
 
         private String id;
+        private List<String> ids;
         private String commandToRun;
 
         public CallableThread(String commandToRun, String id) {
@@ -305,12 +316,25 @@ public class CopyObject {
             this.id = id;
         }
 
+        public CallableThread(String commandToRun, List<String> ids) {
+            this.commandToRun = commandToRun;
+            this.ids = ids;
+        }
+
         @Override
         public Boolean call() {
             try {
                 System.out.println("Command : " + commandToRun);
-                return runS3ShellCommand(commandToRun, new String[]{id});
-//                return true;
+                if(ids == null || ids.size() == 0) {
+//                    return runS3ShellCommand(commandToRun, new String[]{id});
+                    return true;
+                } else {
+                    String[] copy = new String[ids.size()];
+                    copy = ids.toArray(copy);
+//                    return runS3ShellCommand(commandToRun, copy);
+                    return true;
+                }
+
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
                 return false;
