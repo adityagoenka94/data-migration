@@ -11,6 +11,7 @@ import java.util.concurrent.*;
 public class CopyObject {
 
     private Set<String> failedForContent = new TreeSet<>();
+    private List<String> commandFailed = new ArrayList<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
     private String[] mimeTypesNotToHandle = new String[]{
             "application/vnd.ekstep.h5p-archive",
@@ -23,11 +24,11 @@ public class CopyObject {
     private Runtime runtime = Runtime.getRuntime();
 
 
-    public Set<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
+    public List<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(50);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         if(awsCommand != null) {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
@@ -71,7 +72,7 @@ public class CopyObject {
             System.out.println("Please initialize the S3 variables properly.");
         }
         this.awaitTerminationAfterShutdown(executor);
-        return failedForContent;
+        return commandFailed;
     }
 
     private String getContentFolderUrl(String command, String id, String mimeType) {
@@ -197,6 +198,7 @@ public class CopyObject {
         catch (Exception e) {
             System.out.println("Some error occurred while running the aws command : " + e.getMessage());
             e.printStackTrace();
+            commandFailed.add(command);
             addAllContentIdForFailedList(currentContentIds);
         }
         return false;
@@ -292,12 +294,12 @@ public class CopyObject {
     }
 
 
-    public Set<String> copyS3ContentDataForMimes(Map<String, List> contentData) {
+    public List<String> copyS3ContentDataForMimes(Map<String, List> contentData) {
 
         try {
             String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
             System.out.println("AWS build command : " + awsCommand);
-            ExecutorService executor = Executors.newFixedThreadPool(2);
+            ExecutorService executor = Executors.newFixedThreadPool(5);
             if (awsCommand != null) {
 //            int total = contentData.size();
                 long startTime = System.currentTimeMillis();
@@ -335,7 +337,7 @@ public class CopyObject {
             System.out.println("Failed in copyS3ContentDataForMimes : " + e.getMessage());
             e.printStackTrace();
         }
-        return failedForContent;
+        return commandFailed;
     }
 
     private String getContentS3UrlForMime(String command, String id, String mimeType, String iterator) {

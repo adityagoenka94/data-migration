@@ -62,9 +62,11 @@ public class App
                 case 3:
                     contentData = operation.getContentData();
                     if(contentData.size() > 0) {
-                        Set<String> contentFailed = s3CopyObject.copyS3ContentDataForContentIdV2(contentData);
+                        List<String> contentFailed = s3CopyObject.copyS3ContentDataForContentIdV2(contentData);
                         if(contentFailed.size() > 0) {
-                            System.out.println("Failed for content with IDS : " + contentFailed);
+                            System.out.println();
+                            System.out.println("Failed for some content");
+                            writeTofile(contentFailed);
                         } else {
                             System.out.println("Process completed Successfully for all Content of Neo4j.");
                         }
@@ -76,10 +78,10 @@ public class App
                 case 4:
                     Map<String, List> contentDataForMime = operation.getContentDataForMimes();
                     if(contentDataForMime.size() > 0) {
-                        Set<String> contentFailed = s3CopyObject.copyS3ContentDataForMimes(contentDataForMime);
+                        List<String> contentFailed = s3CopyObject.copyS3ContentDataForMimes(contentDataForMime);
                         if(contentFailed.size() > 0) {
                             System.out.println();
-                            System.out.println("Failed for content with IDS : " + contentFailed);
+                            System.out.println("Failed for some content");
                             writeTofile(contentFailed);
 
                         } else {
@@ -143,7 +145,7 @@ public class App
         }
     }
 
-    public static void writeTofile(Set<String> data) {
+    public static void writeTofile(List<String> data) {
         String fileName = "Error_" + System.currentTimeMillis();
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
