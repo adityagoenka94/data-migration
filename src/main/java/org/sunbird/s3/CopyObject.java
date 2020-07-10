@@ -20,6 +20,7 @@ public class CopyObject {
             "text/x-url",
             "video/x-youtube",
             "application/vnd.ekstep.content-collection"};
+    List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
 
     private Runtime runtime = Runtime.getRuntime();
 
@@ -93,30 +94,33 @@ public class CopyObject {
                 for (Object iterator : ids) {
                     String id = (String) iterator;
                     String command = new String(awsCommand);
+                    String commandToRun = getContentFolderUrl(command, id, mimeType);
 //                        System.out.println("Making request for id : " + id);
 //                        new MimeCallableThread(command, id, mimeType).run();
-                    status.add(executor.submit(new MimeCallableThread(command, id, mimeType)));
+                    if(!commandToRun.isEmpty())
+                    status.add(executor.submit(new CallableThread(commandToRun, id)));
                 }
             }
 
 
-            for(Map.Entry<String,String> entry : commandList.entrySet()) {
-                String contentId = entry.getKey();
-                String commandToRun = entry.getValue();
-                try {
-                    status.add(executor.submit(new CallableThread(commandToRun, contentId)));
-//                    runS3ShellCommand(commandToRun, new String[]{id});
-
-                } catch (Exception e) {
-                    System.out.println("Failed for the command : " + commandToRun);
-                    System.out.println(e.getMessage());
-                }
-            }
+//            for(Map.Entry<String,String> entry : commandList.entrySet()) {
+//                String contentId = entry.getKey();
+//                String commandToRun = entry.getValue();
+//                try {
+//                    status.add(executor.submit(new CallableThread(commandToRun, contentId)));
+////                    runS3ShellCommand(commandToRun, new String[]{id});
+//
+//                } catch (Exception e) {
+//                    System.out.println("Failed for the command : " + commandToRun);
+//                    System.out.println(e.getMessage());
+//                }
+//            }
 
             try {
-                for(int i=0; i < status.size(); i++) {
+                int statusSize = status.size();
+                for(int i=0; i < statusSize; i++) {
                     boolean response = status.get(i).get();
-                    printProgress(startTime, total, i+1);
+                    printProgress(startTime, statusSize, i+1);
                 }
             } catch (InterruptedException | ExecutionException e) {
                 System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
@@ -131,7 +135,6 @@ public class CopyObject {
 
     private String getContentFolderUrl(String command, String id, String mimeType) {
         String newCommand = "";
-        List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
         if(! notMime.contains(mimeType)) {
                 newCommand = String.format(command, id, id);
             }
