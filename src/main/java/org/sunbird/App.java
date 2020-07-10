@@ -1,6 +1,7 @@
 package org.sunbird;
 
 import org.sunbird.cassandra.DeleteOperation;
+import org.sunbird.neo4j.ContentS3UrlUpdater;
 import org.sunbird.neo4j.SearchOperation;
 import org.sunbird.publish.Neo4jLiveContentPublisher;
 import org.sunbird.s3.CopyObject;
@@ -30,8 +31,9 @@ public class App
             System.out.println("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType.");
             System.out.println("Enter 4 to perform S3 data migration for Neo4j Content for ecml, html and h5p mimeType only.");
             System.out.println("Enter 5 to perform S3 data migration for Neo4j Assets.");
-            System.out.println("Enter 6 to Republish all Live contents of Neo4j.");
-            System.out.println("Enter 7 to EXIT");
+            System.out.println("Enter 6 to update the S3 Urls of all the Neo4j Contents.");
+            System.out.println("Enter 7 to Republish all Live contents of Neo4j.");
+            System.out.println("Enter 8 to EXIT");
 //        System.out.println("Enter 5 to perform data migration for specific Content Ids Using SDK");
             Scanner scanner = new Scanner(System.in);
 
@@ -111,10 +113,21 @@ public class App
                     }
                     break;
                 case 6:
+                    ContentS3UrlUpdater updater = new ContentS3UrlUpdater();
+                    List<Integer> failedId = updater.updateContentDataS3Urls();
+                    if(failedId.size() > 0) {
+                        System.out.println();
+                        System.out.println("Failed for some ids");
+                        writeNodeIdsTofile(failedId);
+                    } else {
+                        System.out.println("Process completed Successfully for all Content of Neo4j.");
+                    }
+                    break;
+                case 7:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
                     contentPublisher.publishAllContents();
                     break;
-                case 7:
+                case 8:
                     System.out.println();
                     System.out.println("Bye Bye !!");
                     check = false;
@@ -165,6 +178,19 @@ public class App
 
     public static void writeTofile(List<String> data) {
         String fileName = "Error_" + System.currentTimeMillis();
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.write(data.toString());
+
+            writer.close();
+        } catch (Exception e) {
+            System.out.println("Failed to Write the File");
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeNodeIdsTofile(List<Integer> data) {
+        String fileName = "Error-S3URL-Update-Neo4j-" + System.currentTimeMillis();
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
             writer.write(data.toString());
