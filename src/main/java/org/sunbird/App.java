@@ -29,8 +29,9 @@ public class App
             System.out.println("Enter 2 to filter content and framework data from Cassandra.");
             System.out.println("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType.");
             System.out.println("Enter 4 to perform S3 data migration for Neo4j Content for ecml, html and h5p mimeType only.");
-            System.out.println("Enter 5 to Republish all Live contents of Neo4j.");
-            System.out.println("Enter 6 to EXIT");
+            System.out.println("Enter 5 to perform S3 data migration for Neo4j Assets.");
+            System.out.println("Enter 6 to Republish all Live contents of Neo4j.");
+            System.out.println("Enter 7 to EXIT");
 //        System.out.println("Enter 5 to perform data migration for specific Content Ids Using SDK");
             Scanner scanner = new Scanner(System.in);
 
@@ -93,10 +94,27 @@ public class App
                     }
                     break;
                 case 5:
+                    Map<String, List> contentDataForAssets = operation.getContentDataForAssets();
+                    if(contentDataForAssets.size() > 0) {
+                        List<String> contentFailed = s3CopyObject.copyS3AssetDataForContentId(contentDataForAssets);
+                        if(contentFailed.size() > 0) {
+                            System.out.println();
+                            System.out.println("Failed for some content");
+                            writeTofile(contentFailed);
+
+                        } else {
+                            System.out.println("Process completed Successfully for all Content of Neo4j.");
+                        }
+                    }
+                    else {
+                        System.out.println("Neo4j has no Content.");
+                    }
+                    break;
+                case 6:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
                     contentPublisher.publishAllContents();
                     break;
-                case 6:
+                case 7:
                     System.out.println();
                     System.out.println("Bye Bye !!");
                     check = false;

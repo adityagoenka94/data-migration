@@ -75,6 +75,60 @@ public class CopyObject {
         return commandFailed;
     }
 
+
+    public List<String> copyS3AssetDataForContentId(Map<String, List> contentData) {
+
+        String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
+        System.out.println("AWS build command : " + awsCommand);
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+        if(awsCommand != null) {
+            int total = contentData.size();
+            long startTime = System.currentTimeMillis();
+            List<Future<Boolean>> status = new ArrayList<>();
+            Map<String, String> commandList = new HashMap<>();
+            for (Map.Entry<String, List> entry : contentData.entrySet()) {
+                String mimeType = entry.getKey();
+//                    System.out.println("Making request for MimeType : " + mimeType);
+                List ids = entry.getValue();
+                for (Object iterator : ids) {
+                    String id = (String) iterator;
+                    String command = new String(awsCommand);
+//                        System.out.println("Making request for id : " + id);
+//                        new MimeCallableThread(command, id, mimeType).run();
+                    status.add(executor.submit(new MimeCallableThread(command, id, mimeType)));
+                }
+            }
+
+
+            for(Map.Entry<String,String> entry : commandList.entrySet()) {
+                String contentId = entry.getKey();
+                String commandToRun = entry.getValue();
+                try {
+                    status.add(executor.submit(new CallableThread(commandToRun, contentId)));
+//                    runS3ShellCommand(commandToRun, new String[]{id});
+
+                } catch (Exception e) {
+                    System.out.println("Failed for the command : " + commandToRun);
+                    System.out.println(e.getMessage());
+                }
+            }
+
+            try {
+                for(int i=0; i < status.size(); i++) {
+                    boolean response = status.get(i).get();
+                    printProgress(startTime, total, i+1);
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Please initialize the S3 variables properly.");
+        }
+        this.awaitTerminationAfterShutdown(executor);
+        return commandFailed;
+    }
+
     private String getContentFolderUrl(String command, String id, String mimeType) {
         String newCommand = "";
         List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
@@ -84,43 +138,6 @@ public class CopyObject {
         return newCommand;
     }
 
-//    public String getAwsCommandForContentIdFolderMigration() {
-//        StringBuilder awsCommand = new StringBuilder();
-//        String s3bucketFrom = propertiesCache.getProperty("source_s3bucket");
-//        String s3FolderFrom = propertiesCache.getProperty("source_s3folder");
-//        String regionFrom = propertiesCache.getProperty("source_region");
-//        String s3bucketTo = propertiesCache.getProperty("destination_s3bucket");
-//        String s3FolderTo = propertiesCache.getProperty("destination_s3folder");
-//        String regionTo = propertiesCache.getProperty("destination_region");
-//        awsCommand.append("aws s3 cp ");
-//
-//        if(s3bucketFrom == null || s3bucketFrom.isEmpty() || s3bucketTo == null || s3bucketTo.isEmpty()) {
-//            return null;
-//        } else {
-//            awsCommand.append(s3bucketFrom);
-//            if(s3FolderFrom !=null && !s3FolderFrom.isEmpty()) {
-//                awsCommand.append(s3FolderFrom);
-//            }
-//
-//            awsCommand.append(" ");
-//
-//            awsCommand.append(s3bucketTo);
-//            if(s3FolderTo !=null && !s3FolderTo.isEmpty()) {
-//                awsCommand.append(s3FolderTo);
-//            }
-//        }
-//
-//        if(regionFrom != null && !regionFrom.isEmpty()) {
-//            awsCommand.append(" --source-region " + regionFrom);
-//        }
-//
-//        if(regionTo != null && !regionTo.isEmpty()) {
-//            awsCommand.append(" --region " + regionTo);
-//        }
-//
-//        awsCommand.append(" --recursive");
-//        return awsCommand.toString();
-//    }
 
     private String getAwsCommandForContentIdFolderMigrationV2() {
         StringBuilder awsCommand = new StringBuilder();

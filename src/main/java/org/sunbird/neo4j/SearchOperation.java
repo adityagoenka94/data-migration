@@ -61,6 +61,32 @@ public class SearchOperation {
         return contentData;
     }
 
+    public Map<String, List> getContentDataForAssets() {
+        Map<String, List> contentData = new HashMap<>();
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] WITH n.mimeType AS MIME,collect( DISTINCT n.IL_UNIQUE_ID) AS IDS return MIME,IDS;";
+        try {
+            Session session = ConnectionManager.getSession();
+//                StatementResult result = session.run(query);
+            StatementResult result = session.beginTransaction().run(query);
+            while (result.hasNext()) {
+                Record record = result.next();
+//                    System.out.println("result : " + record.get("IDS").asObject());
+//                    System.out.println(
+//                            "Content ID Count : " + record.get("count").asLong());
+                List ids = record.get("IDS").asList();
+                String mimeType = record.get("MIME").asString();
+                contentData.put(mimeType, ids);
+//                    ids = record.get("contentids").asList();
+//                    System.out.println(
+//                            "Content ID is array : " + ids);
+            }
+            session.close();
+        } catch (Exception e) {
+            System.out.println("Failed to fetch Content Ids from Neo4j.");
+        }
+        return contentData;
+    }
+
 
     public Map<String, List> getContentDataForMimes() {
         Map<String, List> contentData = new HashMap<>();
