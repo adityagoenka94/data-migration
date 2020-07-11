@@ -30,7 +30,6 @@ public class ContentS3UrlUpdater {
             if (session == null) {
                 throw new Exception("Failed to get Session from the Neo4j Driver.");
             }
-            transaction = session.beginTransaction();
 
             StatementResult result = transaction.run(countQuery);
             contentSize = result.next().get("COUNT").asInt();
@@ -43,6 +42,7 @@ public class ContentS3UrlUpdater {
                     System.out.println("Missing s3 urls.");
                 } else {
                     while (status) {
+                        transaction = session.beginTransaction();
                         String query = String.format(defaultQuery, skip, size);
                         result = transaction.run(query);
 
@@ -57,6 +57,9 @@ public class ContentS3UrlUpdater {
                         }
 
                         printProgress(startTime, contentSize, (skip + records.size()));
+                        transaction.success();
+                        transaction.commitAsync();
+                        transaction.close();
                         skip += size;
                     }
                 }
