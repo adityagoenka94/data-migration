@@ -1,5 +1,6 @@
 package org.sunbird.neo4j;
 
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -18,21 +19,25 @@ public class ContentS3UrlUpdater {
     String newS3Url;
     String[] urlParmas = new String[]{"previewUrl", "downloadUrl", "artifactUrl", "posterImage", "appIcon", "streamingUrl", "toc_url"};
     List<Integer> failedIds = new ArrayList<>();
-    Transaction transaction;
 
     public List<Integer> updateContentDataS3Urls() {
         Map<String, String> contentData = new HashMap<>();
         boolean status = true;
         int skip = 0;
-        int size = 50;
+        int size = 500;
         try {
             Session session = ConnectionManager.getSession();
             if (session == null) {
                 throw new Exception("Failed to get Session from the Neo4j Driver.");
             }
 
+            Transaction transaction = session.beginTransaction();
             StatementResult result = transaction.run(countQuery);
+            Futures.blockingGet(transaction.commitAsync(), () -> {});
+
             contentSize = result.next().get("COUNT").asInt();
+            transaction.success();
+            transaction.close();
 
             if (contentSize > 0) {
                 long startTime = System.currentTimeMillis();
@@ -51,14 +56,14 @@ public class ContentS3UrlUpdater {
                             status = false;
                         } else if (records.size() < size) {
                             status = false;
-                            updateS3Url(records);
+                            updateS3Url(records, transaction);
                         } else {
-                            updateS3Url(records);
+                            updateS3Url(records, transaction);
                         }
 
                         printProgress(startTime, contentSize, (skip + records.size()));
+                        Futures.blockingGet(transaction.commitAsync(), () -> {});
                         transaction.success();
-                        transaction.commitAsync();
                         transaction.close();
                         skip += size;
                     }
@@ -66,7 +71,7 @@ public class ContentS3UrlUpdater {
             } else {
                 System.out.println("No data of type Content or ContentImage in Neo4j.");
             }
-            transaction.close();
+//            transaction.close();
             session.close();
         } catch (Exception e) {
             System.out.println("Failed to fetch data from Neo4j due to : " + e.getMessage());
@@ -76,7 +81,7 @@ public class ContentS3UrlUpdater {
     }
 
 
-    private void updateS3Url(List<Record> records) {
+    private void updateS3Url(List<Record> records, Transaction transaction) {
 
 
         for(Record record : records) {
@@ -115,7 +120,7 @@ public class ContentS3UrlUpdater {
                 }
 
                 if (updateValues.size() > 0) {
-                    updateNode(id, updateValues);
+                    updateNode(id, updateValues, transaction);
                 }
             } catch (Exception e) {
                 System.out.println("Failed for Node Id : " + id + " due to " + e.getMessage());
@@ -125,7 +130,7 @@ public class ContentS3UrlUpdater {
         }
     }
 
-    private boolean updateNode(int id, Map<String, Object> updateValues) {
+    private boolean updateNode(int id, Map<String, Object> updateValues, Transaction transaction) {
         try {
             StringBuilder updateQuery = new StringBuilder();
             if (updateValues.size() > 0) {
