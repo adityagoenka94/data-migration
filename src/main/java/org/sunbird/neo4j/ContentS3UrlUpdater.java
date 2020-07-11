@@ -125,7 +125,7 @@ public class ContentS3UrlUpdater {
                     updateQuery.append("='").append(entry.getValue().toString()).append("'");
                     updateQuery.append(",");
                 }
-                updateQuery = updateQuery.deleteCharAt(updateQuery.length());
+                updateQuery = updateQuery.deleteCharAt(updateQuery.length()-1);
                 updateQuery.append(" return n;");
 
                 System.out.println("Update query : " + updateQuery.toString());
