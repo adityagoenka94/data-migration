@@ -89,7 +89,9 @@ public class ContentS3UrlUpdater {
                         String value = node.get(urlParam).toString();
                         if(value.indexOf(oldS3Url) >= 0) {
                             newValue = node.get(urlParam).toString().replace(oldS3Url, newS3Url);
-                            updateValues.put(urlParam, newValue);
+                            if(newValue.compareTo(value) != 0) {
+                                updateValues.put(urlParam, newValue);
+                            }
                         }
                     }
                 }
@@ -98,9 +100,14 @@ public class ContentS3UrlUpdater {
                 if (mimeTypeObject != null) {
                     String mimeType = mimeTypeObject.toString();
                     if (!mimeType.isEmpty() && mimeType.indexOf("image") >= 0) {
-                        String variant = node.get("variants").toString();
-                        String newVariant = variant.replaceAll(oldS3Url, newS3Url);
-                        updateValues.put("variants", newVariant);
+                        Object variantObject = node.get("variants");
+                        if(variantObject != null) {
+                            String variant = variantObject.toString();
+                            String newVariant = variant.replaceAll(oldS3Url, newS3Url);
+                            if(newVariant.compareTo(variant) != 0) {
+                                updateValues.put("variants", newVariant);
+                            }
+                        }
                     }
                 }
 
@@ -128,11 +135,11 @@ public class ContentS3UrlUpdater {
                 updateQuery = updateQuery.deleteCharAt(updateQuery.length()-1);
                 updateQuery.append(" return n;");
 
-                System.out.println("Update query : " + updateQuery.toString());
+//                System.out.println("Update query : " + updateQuery.toString());
 
                 StatementResult result = transaction.run(updateQuery.toString());
                 if (result.hasNext()) {
-                    System.out.println("Transaction Success");
+//                    System.out.println("Transaction Success");
                     return true;
                 } else {
                     System.out.println("Transaction Failed");
