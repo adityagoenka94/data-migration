@@ -1,7 +1,9 @@
 package org.sunbird;
 
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.sunbird.cassandra.DeleteOperation;
+import org.sunbird.neo4j.ConnectionManager;
 import org.sunbird.neo4j.ContentS3UrlUpdater;
 import org.sunbird.neo4j.SearchOperation;
 import org.sunbird.publish.Neo4jLiveContentPublisher;
@@ -103,6 +105,7 @@ public class App
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
                     int skip = 0;
                     int size = 50;
+                    Session session = null;
                     try {
                         List<String> totalContentFailed = new ArrayList<>();
                         List<String> contentFailed;
@@ -110,8 +113,9 @@ public class App
 
                         if (contentSize > 0) {
                             long startTime = System.currentTimeMillis();
+                            session = ConnectionManager.getSession();
                             while (status) {
-                                Map<String, String> contentDataForAssets = operation.getContentDataForAssets(skip, size);
+                                Map<String, String> contentDataForAssets = operation.getContentDataForAssets(skip, size, session);
                                 contentFailed = s3CopyAssets.copyS3AssetDataForContentId(contentDataForAssets);
                                 if(contentFailed.size() > 0) {
                                     totalContentFailed.addAll(contentFailed);
@@ -140,6 +144,10 @@ public class App
                     } catch (Exception e) {
                         System.out.println("Failed to fetch data from Neo4j due to : " + e.getMessage());
                         e.printStackTrace();
+                    } finally {
+                        if(session != null) {
+                            session.close();
+                        }
                     }
                     break;
                 case 6:
