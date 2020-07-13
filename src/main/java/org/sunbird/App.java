@@ -121,13 +121,13 @@ public class App
                                     totalContentFailed.addAll(contentFailed);
                                 }
 
+                                printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
+
                                 skip += size;
 
                                 if(skip >= contentSize) {
                                     status = false;
                                 }
-
-                                printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
                             }
                         } else {
                             System.out.println("No data of type Content or ContentImage in Neo4j.");

@@ -27,7 +27,7 @@ public class CopyObjectForAssets {
 
         String awsCommand = getAwsCommandForAssetMigration();
 //        System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(10);
+        ExecutorService executor = Executors.newFixedThreadPool(20);
         if(awsCommand != null) {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
@@ -40,7 +40,7 @@ public class CopyObjectForAssets {
                 String command = new String(awsCommand);
 //                System.out.println("Download Url : " + downloadUrl);
                 String commandToRun = getS3UrlForAssets(command, downloadUrl, mime);
-                System.out.println("Command to Run : " + commandToRun);
+//                System.out.println("Command to Run : " + commandToRun);
 //                        new MimeCallableThread(command, id, mimeType).run();
                 if(!commandToRun.isEmpty())
                     status.add(executor.submit(new CallableThread(commandToRun)));
