@@ -38,7 +38,7 @@ public class CopyObjectForAssets {
 //                    System.out.println("Making request for MimeType : " + mimeType);
                 String mime = entry.getValue();
                 String command = new String(awsCommand);
-                System.out.println("Download Url : " + downloadUrl);
+//                System.out.println("Download Url : " + downloadUrl);
                 String commandToRun = getS3UrlForAssets(command, downloadUrl, mime);
                 System.out.println("Command to Run : " + commandToRun);
 //                        new MimeCallableThread(command, id, mimeType).run();
@@ -126,19 +126,21 @@ public class CopyObjectForAssets {
         } else {
             String contentSubUrl = downloadUrl.replaceAll("https://sl-content-migration.s3.amazonaws.com/","");
             if(contentSubUrl.startsWith("content/do_")) {
-                System.out.println("1" + contentSubUrl);
+//                System.out.println("1" + contentSubUrl);
                 int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
                 String contentFolderUrl = contentSubUrl.substring(0, index);
                 newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
-                System.out.println("2" + contentSubUrl);
+//                System.out.println("2" + contentSubUrl);
             } else if (contentSubUrl.startsWith("content/")) {
-                System.out.println("3" + contentSubUrl);
+//                System.out.println("3" + contentSubUrl);
                 newCommand = String.format(command, contentSubUrl, contentSubUrl);
+                newCommand = newCommand.replace("--recursive" ,"");
             } else if (contentSubUrl.startsWith("media/")) {
-                System.out.println("4" + contentSubUrl);
+//                System.out.println("4" + contentSubUrl);
                 newCommand = String.format(command, contentSubUrl, contentSubUrl);
+                newCommand = newCommand.replace("--recursive" ,"");
             } else {
-                System.out.println("No Match");
+//                System.out.println("No Match");
             }
         }
 
