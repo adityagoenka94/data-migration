@@ -117,14 +117,14 @@ public class CopyObjectForAssets {
             return "";
         } else if(notMime.contains(mimeType)) {
             return "";
-        } else if(downloadUrl.startsWith("https://ekstep-public-prod.s3-ap-south-1.amazonaws.com/assets/")) {
+        } else if(downloadUrl.startsWith("https://sl-content-migration.s3.amazonaws.com/assets/")) {
             return "";
-        } else if(downloadUrl.startsWith("https://ekstep-public-prod.s3-ap-south-1.amazonaws.com/content/assets/")) {
+        } else if(downloadUrl.startsWith("https://sl-content-migration.s3.amazonaws.com/content/assets/")) {
             return "";
-        } else if(!downloadUrl.startsWith("https://ekstep-public-prod.s3-ap-south-1.amazonaws.com/")) {
+        } else if(!downloadUrl.startsWith("https://sl-content-migration.s3.amazonaws.com/")) {
             return "";
         } else {
-            String contentSubUrl = downloadUrl.replaceAll("https://ekstep-public-prod.s3-ap-south-1.amazonaws.com/","");
+            String contentSubUrl = downloadUrl.replaceAll("https://sl-content-migration.s3.amazonaws.com/","");
             if(contentSubUrl.startsWith("content/do_")) {
                 System.out.println("1" + contentSubUrl);
                 int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
