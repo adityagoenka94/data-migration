@@ -77,62 +77,6 @@ public class CopyObject {
     }
 
 
-    public List<String> copyS3AssetDataForContentId(Map<String, List> contentData) {
-
-        String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
-        System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(1);
-        if(awsCommand != null) {
-            int total = contentData.size();
-            long startTime = System.currentTimeMillis();
-            List<Future<Boolean>> status = new ArrayList<>();
-            Map<String, String> commandList = new HashMap<>();
-            for (Map.Entry<String, List> entry : contentData.entrySet()) {
-                String mimeType = entry.getKey();
-//                    System.out.println("Making request for MimeType : " + mimeType);
-                List ids = entry.getValue();
-                for (Object iterator : ids) {
-                    String id = (String) iterator;
-                    String command = new String(awsCommand);
-                    String commandToRun = getContentFolderUrl(command, id, mimeType);
-//                        System.out.println("Making request for id : " + id);
-//                        new MimeCallableThread(command, id, mimeType).run();
-                    if(!commandToRun.isEmpty())
-                    status.add(executor.submit(new CallableThread(commandToRun, id)));
-                }
-            }
-
-
-//            for(Map.Entry<String,String> entry : commandList.entrySet()) {
-//                String contentId = entry.getKey();
-//                String commandToRun = entry.getValue();
-//                try {
-//                    status.add(executor.submit(new CallableThread(commandToRun, contentId)));
-////                    runS3ShellCommand(commandToRun, new String[]{id});
-//
-//                } catch (Exception e) {
-//                    System.out.println("Failed for the command : " + commandToRun);
-//                    System.out.println(e.getMessage());
-//                }
-//            }
-
-            try {
-                int statusSize = status.size();
-                for(int i=0; i < statusSize; i++) {
-                    boolean response = status.get(i).get();
-                    printProgress(startTime, statusSize, i+1);
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
-                e.printStackTrace();
-            }
-        } else {
-            System.out.println("Please initialize the S3 variables properly.");
-        }
-        this.awaitTerminationAfterShutdown(executor);
-        return commandFailed;
-    }
-
     private String getContentFolderUrl(String command, String id, String mimeType) {
         String newCommand = "";
         if(! notMime.contains(mimeType)) {

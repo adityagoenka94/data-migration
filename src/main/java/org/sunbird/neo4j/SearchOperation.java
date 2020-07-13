@@ -61,28 +61,54 @@ public class SearchOperation {
         return contentData;
     }
 
-    public Map<String, List> getContentDataForAssets() {
-        Map<String, List> contentData = new HashMap<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] WITH n.mimeType AS MIME,collect( DISTINCT n.IL_UNIQUE_ID) AS IDS return MIME,IDS;";
+
+    public int getCountForContentDataForAssets() {
+
+        int assetCount = 0;
+        Session session = null;
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] return count(*) AS COUNT;";
         try {
-            Session session = ConnectionManager.getSession();
+            session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
             StatementResult result = session.beginTransaction().run(query);
             while (result.hasNext()) {
                 Record record = result.next();
-//                    System.out.println("result : " + record.get("IDS").asObject());
-//                    System.out.println(
-//                            "Content ID Count : " + record.get("count").asLong());
-                List ids = record.get("IDS").asList();
-                String mimeType = record.get("MIME").asString();
-                contentData.put(mimeType, ids);
-//                    ids = record.get("contentids").asList();
-//                    System.out.println(
-//                            "Content ID is array : " + ids);
+                assetCount = record.get("COUNT").asInt();
+                System.out.println("Total asset count to be migrated : " + assetCount);
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to fetch Content Ids from Neo4j.");
+        } finally {
+            if(session != null) {
+                session.close();
+            }
+        }
+        return assetCount;
+    }
+
+
+    public Map<String, String> getContentDataForAssets(int skip, int size) {
+        Map<String, String> contentData = new HashMap<>();
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] WITH n.mimmeType AS MIME, n.downloadUrl AS URL return MIME,URL SKIP %s LIMIT %s;";
+        String formattedQuery = String.format(query, skip, size);
+        Session session = null;
+        try {
+            session = ConnectionManager.getSession();
+//                StatementResult result = session.run(query);
+            StatementResult result = session.beginTransaction().run(formattedQuery);
+            while (result.hasNext()) {
+                Record record = result.next();
+                String mime = record.get("MIME").asString();
+                String downloadUrl = record.get("URL").asString();
+                contentData.put(downloadUrl, mime);
             }
             session.close();
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j.");
+        } finally {
+            if(session != null) {
+                session.close();
+            }
         }
         return contentData;
     }
