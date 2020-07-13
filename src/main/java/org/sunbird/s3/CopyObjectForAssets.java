@@ -5,6 +5,9 @@ import org.sunbird.util.PropertiesCache;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -95,13 +98,18 @@ public class CopyObjectForAssets {
         if(s3bucketFrom == null || s3bucketFrom.isEmpty() || s3bucketTo == null || s3bucketTo.isEmpty()) {
             return null;
         } else {
+            awsCommand.append("\"");
             awsCommand.append(s3bucketFrom);
 
             awsCommand.append("%s");
+            awsCommand.append("\"");
+
             awsCommand.append(" ");
 
+            awsCommand.append("\"");
             awsCommand.append(s3bucketTo);
             awsCommand.append("%s");
+            awsCommand.append("\"");
         }
 
         awsCommand.append(" --recursive");
@@ -112,6 +120,15 @@ public class CopyObjectForAssets {
     public String getS3UrlForAssets(String command, String downloadUrl, String mimeType) {
 
         String newCommand = "";
+
+        if(downloadUrl != null) {
+            try {
+                downloadUrl = URLDecoder.decode(downloadUrl, StandardCharsets.UTF_8.toString());
+            } catch (UnsupportedEncodingException e) {
+                commandFailed.add(downloadUrl);
+            }
+        }
+
 
         if(downloadUrl == null) {
             return "";
