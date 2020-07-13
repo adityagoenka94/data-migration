@@ -104,7 +104,7 @@ public class App
                     boolean status = true;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
                     int skip = 0;
-                    int size = 50;
+                    int size = 300;
                     Session session = null;
                     try {
                         List<String> totalContentFailed = new ArrayList<>();

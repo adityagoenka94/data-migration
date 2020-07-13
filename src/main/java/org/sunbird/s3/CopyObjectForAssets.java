@@ -27,7 +27,7 @@ public class CopyObjectForAssets {
 
         String awsCommand = getAwsCommandForAssetMigration();
 //        System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ExecutorService executor = Executors.newFixedThreadPool(10);
         if(awsCommand != null) {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
