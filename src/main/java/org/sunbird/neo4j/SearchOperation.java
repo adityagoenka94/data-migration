@@ -90,7 +90,7 @@ public class SearchOperation {
     public Map<String, String> getContentDataForAssets(int skip, int size) {
         Map<String, String> contentData = new HashMap<>();
         String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] WITH n.mimmeType AS MIME, n.downloadUrl AS URL return MIME,URL SKIP %s LIMIT %s;";
-        String formattedQuery = String.format(query, skip, size);
+        String formattedQuery = String.format(new String(query), skip, size);
         Session session = null;
         try {
             session = ConnectionManager.getSession();
@@ -104,7 +104,9 @@ public class SearchOperation {
             }
             session.close();
         } catch (Exception e) {
-            System.out.println("Failed to fetch Content Ids from Neo4j.");
+            System.out.println("Failed to fetch Content Ids from Neo4j : " + e.getMessage());
+            e.printStackTrace();
+
         } finally {
             if(session != null) {
                 session.close();
