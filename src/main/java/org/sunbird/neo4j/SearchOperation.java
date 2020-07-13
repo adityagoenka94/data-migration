@@ -89,7 +89,7 @@ public class SearchOperation {
 
     public Map<String, String> getContentDataForAssets(int skip, int size, Session session) {
         Map<String, String> contentData = new HashMap<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] WITH n.mimmeType AS MIME, n.downloadUrl AS URL return MIME,URL ORDER BY id(n) SKIP %s LIMIT %s;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] return n.mimeType AS MIME,n.downloadUrl AS URL ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
             session = ConnectionManager.getSession();
