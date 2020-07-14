@@ -103,8 +103,9 @@ public class App
                 case 5:
                     boolean status = true;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
-                    int skip = 29700;
-                    int size = 3000;
+                    int skip = 100000;
+                    int size = 5000;
+                    String fileName = "Error_" + System.currentTimeMillis();
                     Session session = null;
                     try {
                         List<String> totalContentFailed = new ArrayList<>();
@@ -118,7 +119,8 @@ public class App
                                 Map<String, String> contentDataForAssets = operation.getContentDataForAssets(skip, size, session);
                                 contentFailed = s3CopyAssets.copyS3AssetDataForContentId(contentDataForAssets);
                                 if(contentFailed.size() > 0) {
-                                    totalContentFailed.addAll(contentFailed);
+                                    appendToFile(contentFailed, fileName);
+//                                    totalContentFailed.addAll(contentFailed);
                                 }
 
                                 printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
@@ -136,7 +138,7 @@ public class App
                         if(totalContentFailed.size() > 0) {
                             System.out.println();
                             System.out.println("Failed for some content");
-                            writeTofile(totalContentFailed);
+//                            writeTofile(totalContentFailed);
 
                         } else {
                             System.out.println("Process completed Successfully for all Content of Neo4j.");
@@ -219,6 +221,18 @@ public class App
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
             writer.write(data.toString());
+
+            writer.close();
+        } catch (Exception e) {
+            System.out.println("Failed to Write the File");
+            e.printStackTrace();
+        }
+    }
+
+    public static void appendToFile(List<String> data, String fileName) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.append(data.toString());
 
             writer.close();
         } catch (Exception e) {
