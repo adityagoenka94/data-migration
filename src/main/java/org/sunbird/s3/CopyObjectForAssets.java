@@ -145,8 +145,12 @@ public class CopyObjectForAssets {
             if(contentSubUrl.startsWith("content/do_")) {
 //                System.out.println("1" + contentSubUrl);
                 int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
-                String contentFolderUrl = contentSubUrl.substring(0, index);
-                newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
+                if(index > 0) {
+                    String contentFolderUrl = contentSubUrl.substring(0, index);
+                    newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
+                } else {
+                    newCommand = String.format(command, contentSubUrl, contentSubUrl);
+                }
 //                System.out.println("2" + contentSubUrl);
             } else if (contentSubUrl.startsWith("content/")) {
 //                System.out.println("3" + contentSubUrl);
