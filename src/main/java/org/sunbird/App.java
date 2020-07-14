@@ -103,8 +103,8 @@ public class App
                 case 5:
                     boolean status = true;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
-                    int skip = 2400;
-                    int size = 300;
+                    int skip = 29700;
+                    int size = 3000;
                     Session session = null;
                     try {
                         List<String> totalContentFailed = new ArrayList<>();

@@ -30,7 +30,7 @@ public class CopyObjectForAssets {
 
         String awsCommand = getAwsCommandForAssetMigration();
 //        System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(100);
         if(awsCommand != null) {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
@@ -191,6 +191,7 @@ public class CopyObjectForAssets {
             }  else {
 //                System.out.println("received exit code not 0");
 //                result = getResult(process);
+                System.out.println("Failed for command : " + command);
                 throw new Exception("Command terminated abnormally : " + result);
             }
         }
