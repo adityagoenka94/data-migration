@@ -103,8 +103,8 @@ public class App
                 case 5:
                     boolean status = true;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
-                    int skip = 100000;
-                    int size = 5000;
+                    int skip = 105000;
+                    int size = 2000;
                     String fileName = "Error_" + System.currentTimeMillis();
                     Session session = null;
                     try {
