@@ -77,7 +77,7 @@ public class SearchOperation {
                 System.out.println("Total asset count to be migrated : " + assetCount);
             }
         } catch (Exception e) {
-            System.out.println("Failed to fetch Content Ids from Neo4j.");
+            System.out.println("Failed to fetch Count of Assets from Neo4j.");
         } finally {
             if(session != null) {
                 session.close();
@@ -92,7 +92,6 @@ public class SearchOperation {
         String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] return n.mimeType AS MIME,n.downloadUrl AS URL ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
-            session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
             StatementResult result = session.beginTransaction().run(formattedQuery);
             while (result.hasNext()) {
@@ -101,7 +100,6 @@ public class SearchOperation {
                 String downloadUrl = record.get("URL").asString();
                 contentData.put(downloadUrl, mime);
             }
-            session.close();
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j : " + e.getMessage());
             e.printStackTrace();
@@ -113,7 +111,7 @@ public class SearchOperation {
 
     public Map<String, List> getContentDataForMimes() {
         Map<String, List> contentData = new HashMap<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND NOT n.contentType IN ['Asset'] AND n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive'] WITH n.mimeType AS MIME,collect( DISTINCT n.IL_UNIQUE_ID) AS IDS return MIME,IDS;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive'] WITH n.mimeType AS MIME,collect( DISTINCT n.IL_UNIQUE_ID) AS IDS return MIME,IDS;";
         try {
             Session session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
@@ -137,22 +135,40 @@ public class SearchOperation {
         return contentData;
     }
 
-    public List getAllLiveContentIds() {
-        List ids = null;
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] WITH collect(n.IL_UNIQUE_ID) AS contentids, count(*) AS count return contentids,count;";
+
+    public int getAllLiveContentCount() {
+
+        int liveContentCount = 0;
+        Session session = null;
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] WITH count(*) AS COUNT return COUNT;";
         try {
-            Session session = ConnectionManager.getSession();
+            session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
             StatementResult result = session.beginTransaction().run(query);
             while (result.hasNext()) {
                 Record record = result.next();
-//                    System.out.println("result : " + record.get("IDS").asObject());
-                System.out.println(
-                        "Content ID Count : " + record.get("count").asLong());
-                ids = record.get("contentids").asList();
-//                    System.out.println(
-//                            "Content ID is array : " + ids);
+                liveContentCount = record.get("COUNT").asInt();
+                System.out.println("Total Live Content count to be published : " + liveContentCount);
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to fetch count of Live Content from Neo4j.");
+        } finally {
+            if(session != null) {
                 session.close();
+            }
+        }
+        return liveContentCount;
+    }
+
+    public List getAllLiveContentIds(int skip, int size, Session session) {
+        List ids = null;
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] WITH collect(n.IL_UNIQUE_ID) AS contentids return contentids ORDER BY id(n) SKIP %s LIMIT %s;";
+        String formattedQuery = String.format(new String(query), skip, size);
+        try {
+            StatementResult result = session.beginTransaction().run(formattedQuery);
+            while (result.hasNext()) {
+                Record record = result.next();
+                ids = record.get("contentids").asList();
             }
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j.");

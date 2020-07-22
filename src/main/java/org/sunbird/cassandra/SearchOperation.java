@@ -75,20 +75,6 @@ public class SearchOperation {
             Statement stmt = new SimpleStatement(query);
             stmt.setFetchSize(batchSize);
             ResultSet rs = session.execute(stmt);
-//            Iterator<Row> iter = rs.iterator();
-//            boolean status = true;
-//            while(status) {
-//                count++;
-//                for(Row row : rs) {
-//                    contentData.add(row.getString("content_id"));
-//                }
-//                System.out.println("Count ; " + count);
-//                if(!rs.isFullyFetched()) {
-//                    rs.fetchMoreResults();
-//                } else {
-//                    status =false;
-//                }
-//            }
 
             for(Row row : rs) {
                 count++;

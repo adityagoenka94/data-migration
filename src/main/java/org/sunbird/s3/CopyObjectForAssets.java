@@ -30,21 +30,15 @@ public class CopyObjectForAssets {
 
         String awsCommand = getAwsCommandForAssetMigration();
 //        System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(100);
+        ExecutorService executor = Executors.newFixedThreadPool(10);
         if(awsCommand != null) {
-            int total = contentData.size();
-            long startTime = System.currentTimeMillis();
             List<Future<Boolean>> status = new ArrayList<>();
-            Map<String, String> commandList = new HashMap<>();
             for (Map.Entry<String, String> entry : contentData.entrySet()) {
                 String downloadUrl = entry.getKey();
-//                    System.out.println("Making request for MimeType : " + mimeType);
                 String mime = entry.getValue();
                 String command = new String(awsCommand);
 //                System.out.println("Download Url : " + downloadUrl);
                 String commandToRun = getS3UrlForAssets(command, downloadUrl, mime);
-//                System.out.println("Command to Run : " + commandToRun);
-//                        new MimeCallableThread(command, id, mimeType).run();
                 if(!commandToRun.isEmpty())
                     status.add(executor.submit(new CallableThread(commandToRun)));
             }
@@ -113,6 +107,7 @@ public class CopyObjectForAssets {
         }
 
         awsCommand.append(" --recursive");
+//        awsCommand.append(" --acl public-read");
         return awsCommand.toString();
     }
 
@@ -142,9 +137,9 @@ public class CopyObjectForAssets {
             return "";
         } else {
             String contentSubUrl = downloadUrl.replaceAll("https://sl-content-migration.s3.amazonaws.com/","");
+            int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
             if(contentSubUrl.startsWith("content/do_")) {
 //                System.out.println("1" + contentSubUrl);
-                int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
                 if(index > 0) {
                     String contentFolderUrl = contentSubUrl.substring(0, index);
                     newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
@@ -152,7 +147,11 @@ public class CopyObjectForAssets {
                     newCommand = String.format(command, contentSubUrl, contentSubUrl);
                 }
 //                System.out.println("2" + contentSubUrl);
-            } else if (contentSubUrl.startsWith("content/")) {
+            } else if(index > 0) {
+                String contentFolderUrl = contentSubUrl.substring(0, index);
+                newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
+            }
+            else if (contentSubUrl.startsWith("content/")) {
 //                System.out.println("3" + contentSubUrl);
                 newCommand = String.format(command, contentSubUrl, contentSubUrl);
                 newCommand = newCommand.replace("--recursive" ,"");
@@ -244,7 +243,7 @@ public class CopyObjectForAssets {
         @Override
         public Boolean call() {
             try {
-                System.out.println("Command : " + commandToRun);
+//                System.out.println("Command : " + commandToRun);
                 return runS3ShellCommand(commandToRun);
 //                return true;
 

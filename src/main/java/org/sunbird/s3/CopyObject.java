@@ -1,5 +1,6 @@
 package org.sunbird.s3;
 
+import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
 
 import java.io.BufferedReader;
@@ -29,7 +30,7 @@ public class CopyObject {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         System.out.println("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ExecutorService executor = Executors.newFixedThreadPool(10);
         if(awsCommand != null) {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
@@ -63,7 +64,7 @@ public class CopyObject {
             try {
                 for(int i=0; i < status.size(); i++) {
                     boolean response = status.get(i).get();
-                    printProgress(startTime, total, i+1);
+                    Progress.printProgress(startTime, total, i+1);
                 }
             } catch (InterruptedException | ExecutionException e) {
                 System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
@@ -125,6 +126,7 @@ public class CopyObject {
         }
 
         awsCommand.append(" --recursive");
+//        awsCommand.append(" --acl public-read");
         return awsCommand.toString();
     }
 
@@ -136,29 +138,15 @@ public class CopyObject {
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
 //            System.out.println("Command Generated : " + command);
-//            System.out.println("running the request");
-//            Process process = runtime.exec(new String[] {"/bin/sh", "-c", command});
-//            while (process.isAlive()) {
-//                Thread.sleep(1000);
-//            }
             result = getResult(process);
             int exitVal = process.waitFor();
             if(exitVal == 0) {
-//                System.out.println("received exit code 0");
-//                result = getResult(process);
-                boolean status = verifyCurrentContentMigration(result, currentContentIds);
-                return status;
+//                boolean status = verifyCurrentContentMigration(result, currentContentIds);
+                return true;
             }  else {
-//                System.out.println("received exit code not 0");
-//                result = getResult(process);
                 throw new Exception("Command terminated abnormally : " + result);
             }
         }
-//        catch (IOException e) {
-//            addAllContentIdsForFailedList(currentContentIds);
-//        } catch (InterruptedException e) {
-//            addAllContentIdsForFailedList(currentContentIds);
-//        }
         catch (Exception e) {
             System.out.println("Some error occurred while running the aws command : " + e.getMessage());
             e.printStackTrace();
@@ -194,30 +182,6 @@ public class CopyObject {
             failedForContent.add(contentId);
     }
 
-    private static void printProgress(long startTime, long total, long current) {
-        long eta = current == 0 ? 0 :
-                (total - current) * (System.currentTimeMillis() - startTime) / current;
-
-        String etaHms = current == 0 ? "N/A" :
-                String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
-                        TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
-                        TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
-
-        StringBuilder string = new StringBuilder(140);
-        int percent = (int) (current * 100 / total);
-        string
-                .append('\r')
-                .append(String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")))
-                .append(String.format(" %d%% [", percent))
-                .append(String.join("", Collections.nCopies(percent, "=")))
-                .append('>')
-                .append(String.join("", Collections.nCopies(100 - percent, " ")))
-                .append(']')
-                .append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
-                .append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
-
-        System.out.print(string);
-    }
 
     class CallableThread implements Callable<Boolean> {
 
@@ -233,7 +197,7 @@ public class CopyObject {
         @Override
         public Boolean call() {
             try {
-                System.out.println("Command : " + commandToRun);
+//                System.out.println("Command : " + commandToRun);
                 return runS3ShellCommand(commandToRun, id);
 //                return true;
 
@@ -287,7 +251,7 @@ public class CopyObject {
                     int statusSize = status.size();
                     for (int i = 0; i < statusSize; i++) {
                         boolean response = status.get(i).get();
-                        printProgress(startTime, statusSize, i + 1);
+                        Progress.printProgress(startTime, statusSize, i + 1);
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     System.out.println("Exception occurred while waiting for the result : " + e.getMessage());

@@ -5,10 +5,10 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class ContentS3UrlUpdater {
 
@@ -21,7 +21,6 @@ public class ContentS3UrlUpdater {
     List<Integer> failedIds = new ArrayList<>();
 
     public List<Integer> updateContentDataS3Urls() {
-        Map<String, String> contentData = new HashMap<>();
         boolean status = true;
         int skip = 0;
         int size = 500;
@@ -61,7 +60,7 @@ public class ContentS3UrlUpdater {
                             updateS3Url(records, transaction);
                         }
 
-                        printProgress(startTime, contentSize, (skip + records.size()));
+                        Progress.printProgress(startTime, contentSize, (skip + records.size()));
                         Futures.blockingGet(transaction.commitAsync(), () -> {});
                         transaction.success();
                         transaction.close();
@@ -71,7 +70,6 @@ public class ContentS3UrlUpdater {
             } else {
                 System.out.println("No data of type Content or ContentImage in Neo4j.");
             }
-//            transaction.close();
             session.close();
         } catch (Exception e) {
             System.out.println("Failed to fetch data from Neo4j due to : " + e.getMessage());
@@ -169,29 +167,4 @@ public class ContentS3UrlUpdater {
         newS3Url = propertiesCache.getProperty("neo4j_new_s3url");
     }
 
-
-    private void printProgress(long startTime, long total, long current) {
-        long eta = current == 0 ? 0 :
-                (total - current) * (System.currentTimeMillis() - startTime) / current;
-
-        String etaHms = current == 0 ? "N/A" :
-                String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
-                        TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
-                        TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
-
-        StringBuilder string = new StringBuilder(140);
-        int percent = (int) (current * 100 / total);
-        string
-                .append('\r')
-                .append(String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")))
-                .append(String.format(" %d%% [", percent))
-                .append(String.join("", Collections.nCopies(percent, "=")))
-                .append('>')
-                .append(String.join("", Collections.nCopies(100 - percent, " ")))
-                .append(']')
-                .append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
-                .append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
-
-        System.out.print(string);
-    }
 }

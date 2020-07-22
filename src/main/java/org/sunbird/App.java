@@ -1,7 +1,6 @@
 package org.sunbird;
 
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
 import org.sunbird.cassandra.DeleteOperation;
 import org.sunbird.neo4j.ConnectionManager;
 import org.sunbird.neo4j.ContentS3UrlUpdater;
@@ -9,14 +8,13 @@ import org.sunbird.neo4j.SearchOperation;
 import org.sunbird.publish.Neo4jLiveContentPublisher;
 import org.sunbird.s3.CopyObject;
 import org.sunbird.s3.CopyObjectForAssets;
+import org.sunbird.util.Progress;
 //import org.sunbird.s3.CopyObjectThroughSDK;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Hello world!
@@ -102,13 +100,13 @@ public class App
                     break;
                 case 5:
                     boolean status = true;
+                    boolean failStatus = false;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
-                    int skip = 105000;
-                    int size = 2000;
-                    String fileName = "Error_" + System.currentTimeMillis();
+                    int skip = 0;
+                    int size = 100;
+                    String fileName = "Error_Asset_" + System.currentTimeMillis();
                     Session session = null;
                     try {
-                        List<String> totalContentFailed = new ArrayList<>();
                         List<String> contentFailed;
                         int contentSize = operation.getCountForContentDataForAssets();
 
@@ -120,10 +118,10 @@ public class App
                                 contentFailed = s3CopyAssets.copyS3AssetDataForContentId(contentDataForAssets);
                                 if(contentFailed.size() > 0) {
                                     appendToFile(contentFailed, fileName);
-//                                    totalContentFailed.addAll(contentFailed);
+                                    failStatus = true;
                                 }
 
-                                printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
+                                Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
 
                                 skip += size;
 
@@ -135,11 +133,10 @@ public class App
                             System.out.println("No data of type Content or ContentImage in Neo4j.");
                         }
 
-                        if(totalContentFailed.size() > 0) {
+                        if(failStatus) {
                             System.out.println();
                             System.out.println("Failed for some content");
-//                            writeTofile(totalContentFailed);
-
+                            System.out.println("Please check the Error File");
                         } else {
                             System.out.println("Process completed Successfully for all Content of Neo4j.");
                         }
@@ -254,28 +251,4 @@ public class App
         }
     }
 
-    private static void printProgress(long startTime, long total, long current) {
-        long eta = current == 0 ? 0 :
-                (total - current) * (System.currentTimeMillis() - startTime) / current;
-
-        String etaHms = current == 0 ? "N/A" :
-                String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
-                        TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
-                        TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
-
-        StringBuilder string = new StringBuilder(140);
-        int percent = (int) (current * 100 / total);
-        string
-                .append('\r')
-                .append(String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")))
-                .append(String.format(" %d%% [", percent))
-                .append(String.join("", Collections.nCopies(percent, "=")))
-                .append('>')
-                .append(String.join("", Collections.nCopies(100 - percent, " ")))
-                .append(']')
-                .append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
-                .append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
-
-        System.out.print(string);
-    }
 }

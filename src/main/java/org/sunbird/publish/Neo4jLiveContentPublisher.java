@@ -6,59 +6,124 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.neo4j.driver.v1.Session;
+import org.sunbird.neo4j.ConnectionManager;
 import org.sunbird.neo4j.SearchOperation;
+import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class Neo4jLiveContentPublisher {
 
-    public boolean publishAllContents() {
+    String url;
+    String publisherId;
+    String publisherName;
 
-        int success = 0;
-        List<String> failureIds = new ArrayList<>();
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+    public void publishAllContents() {
+
+            SearchOperation searchOperation = new SearchOperation();
+
+            boolean status = true;
+            boolean failStatus = false;
+            int skip = 0;
+            int size = 100;
+            String fileName = "Error_Publish_" + System.currentTimeMillis();
+            Session session = null;
+            try {
+
+                verifyProperties();
+
+                List<String> contentFailed;
+                int contentSize = searchOperation.getCountForContentDataForAssets();
+                System.out.println("Count of data to Publish : " + contentSize);
+
+                if (contentSize > 0) {
+                    long startTime = System.currentTimeMillis();
+                    session = ConnectionManager.getSession();
+                    while (status) {
+                        List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size, session);
+                        contentFailed = publishContent(contentDataForAssets);
+                        if (contentFailed.size() > 0) {
+                            appendToFile(contentFailed, fileName);
+                            failStatus = true;
+                        }
+
+                        Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
+
+                        skip += size;
+
+                        if (skip >= contentSize) {
+                            status = false;
+                        }
+                    }
+                } else {
+                    System.out.println("No Live data of Content in Neo4j.");
+                }
+
+                if (failStatus) {
+                    System.out.println();
+                    System.out.println("Published Failed for some content ids.");
+                    System.out.println("Please check the Error File");
+                } else {
+                    System.out.println("Published Successfully for all Live Content of Neo4j.");
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            } finally {
+                if (session != null) {
+                    session.close();
+                }
+            }
+        }
+
+
+        private void verifyProperties() throws Exception {
+
             PropertiesCache propertiesCache = PropertiesCache.getInstance();
 
             String hostUrl = propertiesCache.getProperty("host_url");
             String publishUrl = propertiesCache.getProperty("publish_api_url");
-            String url = hostUrl + publishUrl;
-            String publisherId = propertiesCache.getProperty("publisher_user_id");
-            String publisherName = propertiesCache.getProperty("publisher_name");
+            url = hostUrl + publishUrl;
+            publisherId = propertiesCache.getProperty("publisher_user_id");
+            publisherName = propertiesCache.getProperty("publisher_name");
 
-            if(hostUrl == null || hostUrl.isEmpty()) {
+            if (hostUrl == null || hostUrl.isEmpty()) {
                 System.out.println("Missing Host URL");
                 System.out.println("Failed to publish content");
-                return false;
+                throw new Exception("Missing Host Url.");
             }
-            if(publishUrl == null || publishUrl.isEmpty()) {
+            if (publishUrl == null || publishUrl.isEmpty()) {
                 System.out.println("Missing Publish Api URL");
                 System.out.println("Failed to publish content");
-                return false;
+                throw new Exception("Missing Publish Api Url.");
             }
-            if(publisherId == null || publisherId.isEmpty()) {
+            if (publisherId == null || publisherId.isEmpty()) {
                 System.out.println("Missing Publisher User ID.");
                 System.out.println("Failed to publish content");
-                return false;
+                throw new Exception("Missing Publisher User ID.");
             }
-            if(publisherName == null || publisherName.isEmpty()) {
+            if (publisherName == null || publisherName.isEmpty()) {
                 System.out.println("Missing Publisher Name");
                 System.out.println("Failed to publish content");
-                return false;
+                throw new Exception("Missing Publisher Name.");
             }
+        }
 
-            SearchOperation searchOperation = new SearchOperation();
-            List conentIds = searchOperation.getAllLiveContentIds();
-            int count = conentIds.size();
-            long startTime = System.currentTimeMillis();
-            System.out.println("Count of data to Publish : " + count);
 
-            for (int i = 0; i < count; i++) {
-                String contentId = (String) conentIds.get(i);
+    private List<String> publishContent(List<Object> publishContentIds) throws Exception {
+
+        List<String> failureIds = new ArrayList<>();
+
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+
+            for(int i = 0; i < publishContentIds.size(); i++) {
+                String contentId = (String) publishContentIds.get(i);
                 HttpPost httpPost = new HttpPost(url + contentId);
                 String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
                 StringEntity entity = new StringEntity(json);
@@ -69,61 +134,38 @@ public class Neo4jLiveContentPublisher {
 //                System.out.println("JSON : " + json);
 //                return true;
                 CloseableHttpResponse response = client.execute(httpPost);
-                int status = response.getStatusLine().getStatusCode();
-                if (status == 200) {
-                    success++;
-                } else {
+                int apiStatus = response.getStatusLine().getStatusCode();
+                if (apiStatus != 200) {
                     failureIds.add(contentId);
                 }
-                printProgress(startTime, count, i+1);
-            }
-
-            if(failureIds.size() > 0) {
-                System.out.println("Only " + success + " Content Successfully Published.");
-                System.out.println("Failed to Publish " + failureIds.size() + " Contents.");
-                System.out.println("Content Ids for failed : " + failureIds);
-            } else {
-                System.out.println("Successfully Publish " + success + " Content.");
             }
 
         } catch (UnsupportedEncodingException e) {
             System.out.println("Failed due to Unsupported Entity Exception : " + e.getMessage());
             e.printStackTrace();
-            return false;
+            throw e;
         } catch (ClientProtocolException e) {
             System.out.println("Failed due to Client Protocol Exception : " + e.getMessage());
             e.printStackTrace();
-            return false;
+            throw e;
         } catch (Exception e) {
             System.out.println("Failed due to Unknown Exception : " + e.getMessage());
             e.printStackTrace();
-            return false;
+            throw e;
         }
-        return true;
+        return failureIds;
     }
 
-    public static void printProgress(long startTime, long total, long current) {
-        long eta = current == 0 ? 0 :
-                (total - current) * (System.currentTimeMillis() - startTime) / current;
 
-        String etaHms = current == 0 ? "N/A" :
-                String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
-                        TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
-                        TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
+    public static void appendToFile(List<String> data, String fileName) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+            writer.append(data.toString());
 
-        StringBuilder string = new StringBuilder(140);
-        int percent = (int) (current * 100 / total);
-        string
-                .append('\r')
-                .append(String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")))
-                .append(String.format(" %d%% [", percent))
-                .append(String.join("", Collections.nCopies(percent, "=")))
-                .append('>')
-                .append(String.join("", Collections.nCopies(100 - percent, " ")))
-                .append(']')
-                .append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
-                .append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
-
-        System.out.print(string);
+            writer.close();
+        } catch (Exception e) {
+            System.out.println("Failed to Write the File");
+            e.printStackTrace();
+        }
     }
 }
