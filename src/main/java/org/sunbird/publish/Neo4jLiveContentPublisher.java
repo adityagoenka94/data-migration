@@ -17,12 +17,17 @@ import java.io.FileWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class Neo4jLiveContentPublisher {
 
     String url;
     String publisherId;
     String publisherName;
+    String authorization;
+    String authToken;
+    List<Future<String>> status = new ArrayList<>();
+
 
     public void publishAllContents() {
 
@@ -33,7 +38,8 @@ public class Neo4jLiveContentPublisher {
             int skip = 0;
             int size = 100;
             String fileName = "Error_Publish_" + System.currentTimeMillis();
-            Session session = null;
+        ExecutorService executor = Executors.newFixedThreadPool(20);
+        Session session = null;
             try {
 
                 verifyProperties();
@@ -47,7 +53,7 @@ public class Neo4jLiveContentPublisher {
                     session = ConnectionManager.getSession();
                     while (status) {
                         List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size, session);
-                        contentFailed = publishContent(contentDataForAssets);
+                        contentFailed = publishContent(contentDataForAssets, executor);
                         if (contentFailed.size() > 0) {
                             appendToFile(contentFailed, fileName);
                             failStatus = true;
@@ -80,8 +86,20 @@ public class Neo4jLiveContentPublisher {
                     session.close();
                 }
             }
-        }
+        this.awaitTerminationAfterShutdown(executor);
+    }
 
+    private void awaitTerminationAfterShutdown(ExecutorService threadPool) {
+
+        try {
+            threadPool.shutdown();
+        } catch (Exception ex) {
+            threadPool.shutdownNow();
+            Thread.currentThread().interrupt();
+            System.out.println("An error occurred while shutting down the Executor Service : " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
         private void verifyProperties() throws Exception {
 
@@ -113,10 +131,20 @@ public class Neo4jLiveContentPublisher {
                 System.out.println("Failed to publish content");
                 throw new Exception("Missing Publisher Name.");
             }
+            if (authorization == null || authorization.isEmpty()) {
+                System.out.println("Missing Authorization Key");
+                System.out.println("Failed to publish content");
+                throw new Exception("Missing Authorization Key.");
+            }
+            if (authToken == null || authToken.isEmpty()) {
+                System.out.println("Missing Auth Token");
+                System.out.println("Failed to publish content");
+                throw new Exception("Missing Auth Token.");
+            }
         }
 
 
-    private List<String> publishContent(List<Object> publishContentIds) throws Exception {
+    private List<String> publishContent(List<Object> publishContentIds, ExecutorService executor) throws Exception {
 
         List<String> failureIds = new ArrayList<>();
 
@@ -124,20 +152,40 @@ public class Neo4jLiveContentPublisher {
 
             for(int i = 0; i < publishContentIds.size(); i++) {
                 String contentId = (String) publishContentIds.get(i);
-                HttpPost httpPost = new HttpPost(url + contentId);
-                String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
-                StringEntity entity = new StringEntity(json);
-                httpPost.setEntity(entity);
-                httpPost.setHeader("Accept", "application/json");
-                httpPost.setHeader("Content-type", "application/json");
+//                HttpPost httpPost = new HttpPost(url + contentId);
+//                String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
+//                StringEntity entity = new StringEntity(json);
+//                httpPost.setEntity(entity);
+//                httpPost.setHeader("Accept", "application/json");
+//                httpPost.setHeader("Content-type", "application/json");
+//                if(authorization.startsWith("Bearer")) {
+//                    httpPost.setHeader("Authorization", authorization);
+//                } else {
+//                    httpPost.setHeader("Authorization", "Bearer "+authorization);
+//                }
+//                httpPost.setHeader("x-authenticated-user-token", authToken);
 
 //                System.out.println("JSON : " + json);
 //                return true;
-                CloseableHttpResponse response = client.execute(httpPost);
-                int apiStatus = response.getStatusLine().getStatusCode();
-                if (apiStatus != 200) {
-                    failureIds.add(contentId);
+                status.add(executor.submit(new CallableThread(client, contentId)));
+
+//                CloseableHttpResponse response = client.execute(httpPost);
+//                int apiStatus = response.getStatusLine().getStatusCode();
+//                if (apiStatus != 200) {
+//                    failureIds.add(contentId);
+//                }
+            }
+            try {
+                int statusSize = status.size();
+                for(int i=0; i < statusSize; i++) {
+                    String response = status.get(i).get();
+                    if(!response.equals("true")) {
+                        failureIds.add(response);
+                    }
                 }
+            } catch (InterruptedException | ExecutionException e) {
+                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                e.printStackTrace();
             }
 
         } catch (UnsupportedEncodingException e) {
@@ -155,6 +203,51 @@ public class Neo4jLiveContentPublisher {
         }
         return failureIds;
     }
+
+    class CallableThread implements Callable<String> {
+
+        private String id;
+        private CloseableHttpClient client;
+
+        public CallableThread(CloseableHttpClient client, String id) {
+            this.client = client;
+            this.id = id;
+        }
+
+
+        @Override
+        public String call() {
+            try {
+//                System.out.println("Command : " + commandToRun);
+                HttpPost httpPost = new HttpPost(url + id);
+                String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
+                StringEntity entity = new StringEntity(json);
+                httpPost.setEntity(entity);
+                httpPost.setHeader("Accept", "application/json");
+                httpPost.setHeader("Content-type", "application/json");
+                if(authorization.startsWith("Bearer")) {
+                    httpPost.setHeader("Authorization", authorization);
+                } else {
+                    httpPost.setHeader("Authorization", "Bearer "+authorization);
+                }
+                httpPost.setHeader("x-authenticated-user-token", authToken);
+                CloseableHttpResponse response = client.execute(httpPost);
+                int apiStatus = response.getStatusLine().getStatusCode();
+                if (apiStatus == 200) {
+                    return "true";
+                } else {
+                    return id;
+                }
+//                return true;
+
+
+            } catch (Exception e) {
+                System.out.println("Some error occurred while running the aws script.");
+                return id;
+            }
+        }
+    }
+
 
 
     public static void appendToFile(List<String> data, String fileName) {
