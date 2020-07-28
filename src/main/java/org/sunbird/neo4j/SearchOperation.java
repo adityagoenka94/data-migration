@@ -165,6 +165,7 @@ public class SearchOperation {
         String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
+            session = ConnectionManager.getSession();
             StatementResult result = session.beginTransaction().run(formattedQuery);
             while (result.hasNext()) {
                 Record record = result.next();
