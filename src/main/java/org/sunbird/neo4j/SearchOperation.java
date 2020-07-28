@@ -162,7 +162,7 @@ public class SearchOperation {
 
     public List getAllLiveContentIds(int skip, int size, Session session) {
         List<String> ids = new ArrayList<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
+        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
             StatementResult result = session.beginTransaction().run(formattedQuery);
