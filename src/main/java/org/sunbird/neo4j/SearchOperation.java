@@ -89,7 +89,7 @@ public class SearchOperation {
 
     public Map<String, String> getContentDataForAssets(int skip, int size, Session session) {
         Map<String, String> contentData = new HashMap<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] return n.mimeType AS MIME,n.downloadUrl AS URL ORDER BY id(n) SKIP %s LIMIT %s;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url'] return n.mimeType AS MIME,n.downloadUrl AS URL ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
 //                StatementResult result = session.run(query);
@@ -162,13 +162,14 @@ public class SearchOperation {
 
     public List getAllLiveContentIds(int skip, int size, Session session) {
         List ids = null;
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] WITH collect(n.IL_UNIQUE_ID) AS contentids return contentids ORDER BY id(n) SKIP %s LIMIT %s;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
             StatementResult result = session.beginTransaction().run(formattedQuery);
             while (result.hasNext()) {
                 Record record = result.next();
-                ids = record.get("contentids").asList();
+                String id = record.get("contentids").asString();
+                ids.add(id);
             }
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j.");
