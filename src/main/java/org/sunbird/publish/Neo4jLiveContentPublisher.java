@@ -38,7 +38,7 @@ public class Neo4jLiveContentPublisher {
             int skip = 0;
             int size = 100;
             String fileName = "Error_Publish_" + System.currentTimeMillis();
-        ExecutorService executor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         Session session = null;
             try {
 
@@ -151,7 +151,7 @@ public class Neo4jLiveContentPublisher {
 
         List<String> failureIds = new ArrayList<>();
 
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try {
 
             for(int i = 0; i < publishContentIds.size(); i++) {
                 String contentId = (String) publishContentIds.get(i);
@@ -170,7 +170,7 @@ public class Neo4jLiveContentPublisher {
 
 //                System.out.println("JSON : " + json);
 //                return true;
-                status.add(executor.submit(new CallableThread(client, contentId)));
+                status.add(executor.submit(new CallableThread(contentId)));
 
 //                CloseableHttpResponse response = client.execute(httpPost);
 //                int apiStatus = response.getStatusLine().getStatusCode();
@@ -191,15 +191,7 @@ public class Neo4jLiveContentPublisher {
                 e.printStackTrace();
             }
 
-        } catch (UnsupportedEncodingException e) {
-            System.out.println("Failed due to Unsupported Entity Exception : " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        } catch (ClientProtocolException e) {
-            System.out.println("Failed due to Client Protocol Exception : " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        } catch (Exception e) {
+        }catch (Exception e) {
             System.out.println("Failed due to Unknown Exception : " + e.getMessage());
             e.printStackTrace();
             throw e;
@@ -210,17 +202,15 @@ public class Neo4jLiveContentPublisher {
     class CallableThread implements Callable<String> {
 
         private String id;
-        private CloseableHttpClient client;
 
-        public CallableThread(CloseableHttpClient client, String id) {
-            this.client = client;
+        public CallableThread(String id) {
             this.id = id;
         }
 
 
         @Override
         public String call() {
-            try {
+            try (CloseableHttpClient client = HttpClients.createDefault()) {
 //                System.out.println("Command : " + commandToRun);
                 System.out.println("Publishing content with Id : " + id);
                 HttpPost httpPost = new HttpPost(url + id);
@@ -247,7 +237,7 @@ public class Neo4jLiveContentPublisher {
 
 
             } catch (Exception e) {
-                System.out.println("Some error occurred while running the aws script.");
+                System.out.println("Some error occurred while publishing the content : " + id);
                 e.printStackTrace();
                 return id;
             }
