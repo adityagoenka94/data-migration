@@ -53,6 +53,7 @@ public class Neo4jLiveContentPublisher {
                     session = ConnectionManager.getSession();
                     while (status) {
                         List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size, session);
+                        System.out.println(contentDataForAssets);
                         contentFailed = publishContent(contentDataForAssets, executor);
                         if (contentFailed.size() > 0) {
                             appendToFile(contentFailed, fileName);
