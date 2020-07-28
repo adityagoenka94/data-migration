@@ -222,6 +222,7 @@ public class Neo4jLiveContentPublisher {
         public String call() {
             try {
 //                System.out.println("Command : " + commandToRun);
+                System.out.println("Publishing content with Id : " + id);
                 HttpPost httpPost = new HttpPost(url + id);
                 String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
                 StringEntity entity = new StringEntity(json);
@@ -236,6 +237,7 @@ public class Neo4jLiveContentPublisher {
                 httpPost.setHeader("x-authenticated-user-token", authToken);
                 CloseableHttpResponse response = client.execute(httpPost);
                 int apiStatus = response.getStatusLine().getStatusCode();
+                System.out.println("apiStatus : " + apiStatus);
                 if (apiStatus == 200) {
                     return "true";
                 } else {
@@ -246,6 +248,7 @@ public class Neo4jLiveContentPublisher {
 
             } catch (Exception e) {
                 System.out.println("Some error occurred while running the aws script.");
+                e.printStackTrace();
                 return id;
             }
         }
