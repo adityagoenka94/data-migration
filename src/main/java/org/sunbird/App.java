@@ -31,7 +31,7 @@ public class App
         while(check) {
             System.out.println("Enter 1 to get Content Id list from Neo4j");
             System.out.println("Enter 2 to filter content and framework data from Cassandra.");
-            System.out.println("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType.");
+            System.out.println("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType contents.");
             System.out.println("Enter 4 to perform S3 data migration for Neo4j Content for ecml, html and h5p mimeType only.");
             System.out.println("Enter 5 to perform S3 data migration for Neo4j Assets.");
             System.out.println("Enter 6 to update the S3 Urls of all the Neo4j Contents.");

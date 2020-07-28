@@ -15,12 +15,7 @@ public class CopyObject {
     private List<String> commandFailed = new ArrayList<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
     private String[] mimeTypesNotToHandle = new String[]{
-            "application/vnd.ekstep.h5p-archive",
-            "application/vnd.ekstep.html-archive",
-            "application/vnd.ekstep.ecml-archive",
-            "text/x-url",
-            "video/x-youtube",
-            "application/vnd.ekstep.content-collection"};
+            "text/x-url"};
     List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
 
     private Runtime runtime = Runtime.getRuntime();
@@ -227,7 +222,7 @@ public class CopyObject {
         try {
             String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
             System.out.println("AWS build command : " + awsCommand);
-            ExecutorService executor = Executors.newFixedThreadPool(5);
+            ExecutorService executor = Executors.newFixedThreadPool(10);
             if (awsCommand != null) {
 //            int total = contentData.size();
                 long startTime = System.currentTimeMillis();

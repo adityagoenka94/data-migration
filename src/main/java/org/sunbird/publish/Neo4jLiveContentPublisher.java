@@ -110,6 +110,8 @@ public class Neo4jLiveContentPublisher {
             url = hostUrl + publishUrl;
             publisherId = propertiesCache.getProperty("publisher_user_id");
             publisherName = propertiesCache.getProperty("publisher_name");
+            authorization = propertiesCache.getProperty("authorization");
+            authToken = propertiesCache.getProperty("auth_token");
 
             if (hostUrl == null || hostUrl.isEmpty()) {
                 System.out.println("Missing Host URL");
