@@ -36,7 +36,8 @@ public class App
             System.out.println("Enter 5 to perform S3 data migration for Neo4j Assets.");
             System.out.println("Enter 6 to update the S3 Urls of all the Neo4j Contents.");
             System.out.println("Enter 7 to Republish all Live contents of Neo4j.");
-            System.out.println("Enter 8 to EXIT");
+            System.out.println("Enter 8 to Republish specific content ids of Neo4j.");
+            System.out.println("Enter 9 to EXIT");
 //        System.out.println("Enter 5 to perform data migration for specific Content Ids Using SDK");
             Scanner scanner = new Scanner(System.in);
 
@@ -165,6 +166,17 @@ public class App
                     contentPublisher.publishAllContents();
                     break;
                 case 8:
+                    System.out.println("Enter content ids as comma separated values.");
+                    String contents = scanner.nextLine();
+                    String[] contentIds = contents.split(",");
+                    if(contentIds.length > 0) {
+                        Neo4jLiveContentPublisher contentPublisherForIds = new Neo4jLiveContentPublisher();
+                        contentPublisherForIds.publishContentsForIds(contentIds);
+                    } else {
+                        System.out.println("Please enter some ids as comma separated values.");
+                    }
+                    break;
+                case 9:
                     System.out.println();
                     System.out.println("Bye Bye !!");
                     check = false;

@@ -16,6 +16,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -82,6 +83,32 @@ public class Neo4jLiveContentPublisher {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
             }
+        this.awaitTerminationAfterShutdown(executor);
+    }
+
+    public void publishContentsForIds(String[] contentIds) {
+        boolean failStatus = false;
+        List<String> contentFailed;
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+        String fileName = "Error_Publish_" + System.currentTimeMillis();
+        try {
+        List<Object> contentData = Arrays.asList(contentIds);
+        contentFailed = publishContent(contentData, executor);
+        if (contentFailed.size() > 0) {
+            appendToFile(contentFailed, fileName);
+            failStatus = true;
+        }
+        if (failStatus) {
+            System.out.println();
+            System.out.println("Published Failed for some content ids.");
+            System.out.println("Please check the Error File");
+        } else {
+            System.out.println("Published Successfully for all Live Content of Neo4j.");
+        }
+    } catch (Exception e) {
+        System.out.println(e.getMessage());
+        e.printStackTrace();
+    }
         this.awaitTerminationAfterShutdown(executor);
     }
 
