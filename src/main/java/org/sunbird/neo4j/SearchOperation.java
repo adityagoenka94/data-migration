@@ -31,7 +31,8 @@ public class SearchOperation {
                 }
         } catch (Exception e) {
                 System.out.println("Failed to fetch Content Ids from Neo4j.");
-            }
+            e.printStackTrace();
+        }
         return ids;
     }
 
@@ -57,6 +58,7 @@ public class SearchOperation {
             session.close();
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j.");
+            e.printStackTrace();
         }
         return contentData;
     }
@@ -78,6 +80,7 @@ public class SearchOperation {
             }
         } catch (Exception e) {
             System.out.println("Failed to fetch Count of Assets from Neo4j.");
+            e.printStackTrace();
         } finally {
             if(session != null) {
                 session.close();
@@ -103,7 +106,6 @@ public class SearchOperation {
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j : " + e.getMessage());
             e.printStackTrace();
-
         }
         return contentData;
     }
@@ -131,6 +133,7 @@ public class SearchOperation {
             session.close();
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j.");
+            e.printStackTrace();
         }
         return contentData;
     }
@@ -152,6 +155,7 @@ public class SearchOperation {
             }
         } catch (Exception e) {
             System.out.println("Failed to fetch count of Live Content from Neo4j.");
+            e.printStackTrace();
         } finally {
             if(session != null) {
                 session.close();
@@ -160,8 +164,9 @@ public class SearchOperation {
         return liveContentCount;
     }
 
-    public List getAllLiveContentIds(int skip, int size, Session session) {
+    public List getAllLiveContentIds(int skip, int size) {
         List<String> ids = new ArrayList<>();
+        Session session = ConnectionManager.getSession();
         String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
@@ -173,6 +178,11 @@ public class SearchOperation {
             }
         } catch (Exception e) {
             System.out.println("Failed to fetch Content Ids from Neo4j.");
+            e.printStackTrace();
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
         return ids;
     }
