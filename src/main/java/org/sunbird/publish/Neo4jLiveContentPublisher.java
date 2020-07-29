@@ -176,7 +176,7 @@ public class Neo4jLiveContentPublisher {
         try {
 
             for(int i = 0; i < publishContentIds.size(); i++) {
-                String contentId = (String) publishContentIds.get(i);
+                String contentId = ((String) publishContentIds.get(i)).trim();
 //                HttpPost httpPost = new HttpPost(url + contentId);
 //                String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
 //                StringEntity entity = new StringEntity(json);
