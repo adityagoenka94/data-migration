@@ -163,6 +163,7 @@ public class App
                     break;
                 case 7:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
+                    contentPublisher.verifyProperties();
                     contentPublisher.publishAllContents();
                     break;
                 case 8:

@@ -124,7 +124,7 @@ public class Neo4jLiveContentPublisher {
         }
     }
 
-        private void verifyProperties() throws Exception {
+        public void verifyProperties() throws Exception {
 
             PropertiesCache propertiesCache = PropertiesCache.getInstance();
 
