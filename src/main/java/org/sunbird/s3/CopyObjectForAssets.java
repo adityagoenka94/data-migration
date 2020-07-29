@@ -17,12 +17,7 @@ public class CopyObjectForAssets {
     private List<String> commandFailed = new ArrayList<>();
     private static PropertiesCache propertiesCache = PropertiesCache.getInstance();
     private String[] mimeTypesNotToHandle = new String[]{
-            "application/vnd.ekstep.h5p-archive",
-            "application/vnd.ekstep.html-archive",
-            "application/vnd.ekstep.ecml-archive",
-            "text/x-url",
-            "video/x-youtube",
-            "application/vnd.ekstep.content-collection"};
+            "text/x-url"};
     List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
 
 

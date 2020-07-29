@@ -37,7 +37,7 @@ public class SearchOperation {
 
     public Map<String, String> getContentData() {
         Map<String, String> contentData = new HashMap<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND NOT n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] WITH n.IL_UNIQUE_ID AS IDS, n.mimeType AS MIME return DISTINCT IDS,MIME;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND NOT n.contentType IN ['Asset'] WITH n.IL_UNIQUE_ID AS IDS, n.mimeType AS MIME return DISTINCT IDS,MIME;";
         try {
             Session session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
@@ -66,7 +66,7 @@ public class SearchOperation {
 
         int assetCount = 0;
         Session session = null;
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url','video/x-youtube','application/vnd.ekstep.content-collection'] return count(*) AS COUNT;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] return count(*) AS COUNT;";
         try {
             session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
@@ -89,7 +89,7 @@ public class SearchOperation {
 
     public Map<String, String> getContentDataForAssets(int skip, int size, Session session) {
         Map<String, String> contentData = new HashMap<>();
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] AND NOT n.mimeType IN ['application/vnd.ekstep.h5p-archive','application/vnd.ekstep.html-archive','application/vnd.ekstep.ecml-archive','text/x-url'] return n.mimeType AS MIME,n.downloadUrl AS URL ORDER BY id(n) SKIP %s LIMIT %s;";
+        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content', 'ContentImage'] AND n.contentType IN ['Asset'] return n.mimeType AS MIME,n.downloadUrl AS URL ORDER BY id(n) SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
 //                StatementResult result = session.run(query);
@@ -140,7 +140,7 @@ public class SearchOperation {
 
         int liveContentCount = 0;
         Session session = null;
-        String query = "MATCH (n) WHERE n.IL_FUNC_OBJECT_TYPE IN ['Content'] AND n.status IN ['Live'] WITH count(*) AS COUNT return COUNT;";
+        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] WITH count(*) AS COUNT return COUNT;";
         try {
             session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);

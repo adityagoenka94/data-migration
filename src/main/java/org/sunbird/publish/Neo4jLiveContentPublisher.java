@@ -38,14 +38,14 @@ public class Neo4jLiveContentPublisher {
             int skip = 0;
             int size = 100;
             String fileName = "Error_Publish_" + System.currentTimeMillis();
-        ExecutorService executor = Executors.newFixedThreadPool(1);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         Session session = null;
             try {
 
                 verifyProperties();
 
                 List<String> contentFailed;
-                int contentSize = searchOperation.getCountForContentDataForAssets();
+                int contentSize = searchOperation.getAllLiveContentCount();
                 System.out.println("Count of data to Publish : " + contentSize);
 
                 if (contentSize > 0) {
@@ -212,7 +212,7 @@ public class Neo4jLiveContentPublisher {
         public String call() {
             try (CloseableHttpClient client = HttpClients.createDefault()) {
 //                System.out.println("Command : " + commandToRun);
-                System.out.println("Publishing content with Id : " + id);
+//                System.out.println("Publishing content with Id : " + id);
                 HttpPost httpPost = new HttpPost(url + id);
                 String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
                 StringEntity entity = new StringEntity(json);
@@ -227,7 +227,7 @@ public class Neo4jLiveContentPublisher {
                 httpPost.setHeader("x-authenticated-user-token", authToken);
                 CloseableHttpResponse response = client.execute(httpPost);
                 int apiStatus = response.getStatusLine().getStatusCode();
-                System.out.println("apiStatus : " + apiStatus);
+                System.out.println("apiStatus for Content id "+ id + " is : " + apiStatus);
                 if (apiStatus == 200) {
                     return "true";
                 } else {
