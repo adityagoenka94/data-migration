@@ -163,7 +163,6 @@ public class App
                     break;
                 case 7:
                     Neo4jLiveContentPublisher contentPublisher = new Neo4jLiveContentPublisher();
-                    contentPublisher.verifyProperties();
                     contentPublisher.publishAllContents();
                     break;
                 case 8:
@@ -172,6 +171,7 @@ public class App
                     String[] contentIds = contents.split(",");
                     if(contentIds.length > 0) {
                         Neo4jLiveContentPublisher contentPublisherForIds = new Neo4jLiveContentPublisher();
+                        contentPublisherForIds.verifyProperties();
                         contentPublisherForIds.publishContentsForIds(contentIds);
                     } else {
                         System.out.println("Please enter some ids as comma separated values.");
