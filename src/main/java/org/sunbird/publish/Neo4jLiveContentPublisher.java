@@ -50,9 +50,8 @@ public class Neo4jLiveContentPublisher {
 
                 if (contentSize > 0) {
                     long startTime = System.currentTimeMillis();
-                    session = ConnectionManager.getSession();
                     while (status) {
-                        List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size, session);
+                        List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size);
                         System.out.println(contentDataForAssets);
                         contentFailed = publishContent(contentDataForAssets, executor);
                         if (contentFailed.size() > 0) {
@@ -82,10 +81,6 @@ public class Neo4jLiveContentPublisher {
             } catch (Exception e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
-            } finally {
-                if (session != null) {
-                    session.close();
-                }
             }
         this.awaitTerminationAfterShutdown(executor);
     }
