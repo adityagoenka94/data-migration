@@ -11,9 +11,7 @@ import org.sunbird.s3.CopyObjectForAssets;
 import org.sunbird.util.Progress;
 //import org.sunbird.s3.CopyObjectThroughSDK;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -166,8 +164,31 @@ public class App
                     contentPublisher.publishAllContents();
                     break;
                 case 8:
-                    System.out.println("Enter content ids as comma separated values.");
-                    String contents = scanner.nextLine();
+                    System.out.println("Enter File Path.");
+                    String contents = "";
+                    String FileName = "";
+                    try {
+                        fileName = scanner.nextLine();
+
+//                    BufferedReader ob = new BufferedReader(new InputStreamReader(new FileInputStream(contents)));
+                        BufferedReader br = new BufferedReader(new FileReader(fileName));
+
+                        //One way of reading the file
+                        String contentLine = br.readLine();
+                        while (contentLine != null) {
+                            contents += contentLine;
+                            contentLine = br.readLine();
+                        }
+                        br.close();
+                        if (contents.contains("[")) {
+                            contents = contents.replace("[", "");
+                        }
+                        if (contents.contains("]")) {
+                            contents = contents.replace("]", "");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     String[] contentIds = contents.split(",");
                     if(contentIds.length > 0) {
                         Neo4jLiveContentPublisher contentPublisherForIds = new Neo4jLiveContentPublisher();
