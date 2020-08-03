@@ -1,5 +1,8 @@
 package org.sunbird.util;
 
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
+
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +30,7 @@ public class Progress {
                 .append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
                 .append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
 
-        System.out.print(string);
+        ProjectLogger.log(string.toString(), LoggerEnum.INFO.name());
     }
 
 }

@@ -1,20 +1,19 @@
 package org.sunbird.publish;
 
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.neo4j.driver.v1.Session;
-import org.sunbird.neo4j.ConnectionManager;
 import org.sunbird.neo4j.SearchOperation;
 import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,13 +46,13 @@ public class Neo4jLiveContentPublisher {
 
                 List<String> contentFailed;
                 int contentSize = searchOperation.getAllLiveContentCount();
-                System.out.println("Count of data to Publish : " + contentSize);
+                ProjectLogger.log("Count of data to Publish : " + contentSize, LoggerEnum.INFO.name());
 
                 if (contentSize > 0) {
                     long startTime = System.currentTimeMillis();
                     while (status) {
                         List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size);
-                        System.out.println(contentDataForAssets);
+                        ProjectLogger.log(contentDataForAssets.toString(), LoggerEnum.INFO.name());
                         contentFailed = publishContent(contentDataForAssets, executor);
                         if (contentFailed.size() > 0) {
                             appendToFile(contentFailed, fileName);
@@ -69,18 +68,18 @@ public class Neo4jLiveContentPublisher {
                         }
                     }
                 } else {
-                    System.out.println("No Live data of Content in Neo4j.");
+                    ProjectLogger.log("No Live data of Content in Neo4j.", LoggerEnum.INFO.name());
                 }
 
                 if (failStatus) {
-                    System.out.println();
-                    System.out.println("Published Failed for some content ids.");
-                    System.out.println("Please check the Error File");
+                    ProjectLogger.log("", LoggerEnum.INFO.name());
+                    ProjectLogger.log("Published Failed for some content ids.", LoggerEnum.INFO.name());
+                    ProjectLogger.log("Please check the Error File", LoggerEnum.INFO.name());
                 } else {
-                    System.out.println("Published Successfully for all Live Content of Neo4j.");
+                    ProjectLogger.log("Published Successfully for all Live Content of Neo4j.", LoggerEnum.INFO.name());
                 }
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                ProjectLogger.log(e.getMessage(), e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
             }
         this.awaitTerminationAfterShutdown(executor);
@@ -99,14 +98,14 @@ public class Neo4jLiveContentPublisher {
             failStatus = true;
         }
         if (failStatus) {
-            System.out.println();
-            System.out.println("Published Failed for some content ids.");
-            System.out.println("Please check the Error File");
+            ProjectLogger.log("", LoggerEnum.INFO.name());
+            ProjectLogger.log("Published Failed for some content ids.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Please check the Error File", LoggerEnum.INFO.name());
         } else {
-            System.out.println("Published Successfully for all Live Content of Neo4j.");
+            ProjectLogger.log("Published Successfully for all Live Content of Neo4j.", LoggerEnum.INFO.name());
         }
     } catch (Exception e) {
-        System.out.println(e.getMessage());
+        ProjectLogger.log(e.getMessage(), e, LoggerEnum.ERROR.name());
         e.printStackTrace();
     }
         this.awaitTerminationAfterShutdown(executor);
@@ -119,7 +118,7 @@ public class Neo4jLiveContentPublisher {
         } catch (Exception ex) {
             threadPool.shutdownNow();
             Thread.currentThread().interrupt();
-            System.out.println("An error occurred while shutting down the Executor Service : " + ex.getMessage());
+            ProjectLogger.log("An error occurred while shutting down the Executor Service : " + ex.getMessage(), ex, LoggerEnum.ERROR.name());
             ex.printStackTrace();
         }
     }
@@ -137,33 +136,33 @@ public class Neo4jLiveContentPublisher {
             authToken = propertiesCache.getProperty("auth_token");
 
             if (hostUrl == null || hostUrl.isEmpty()) {
-                System.out.println("Missing Host URL");
-                System.out.println("Failed to publish content");
+                ProjectLogger.log("Missing Host URL", LoggerEnum.INFO.name());
+                ProjectLogger.log("Failed to publish content", LoggerEnum.INFO.name());
                 throw new Exception("Missing Host Url.");
             }
             if (publishUrl == null || publishUrl.isEmpty()) {
-                System.out.println("Missing Publish Api URL");
-                System.out.println("Failed to publish content");
+                ProjectLogger.log("Missing Publish Api URL", LoggerEnum.INFO.name());
+                ProjectLogger.log("Failed to publish content", LoggerEnum.INFO.name());
                 throw new Exception("Missing Publish Api Url.");
             }
             if (publisherId == null || publisherId.isEmpty()) {
-                System.out.println("Missing Publisher User ID.");
-                System.out.println("Failed to publish content");
+                ProjectLogger.log("Missing Publisher User ID.", LoggerEnum.INFO.name());
+                ProjectLogger.log("Failed to publish content", LoggerEnum.INFO.name());
                 throw new Exception("Missing Publisher User ID.");
             }
             if (publisherName == null || publisherName.isEmpty()) {
-                System.out.println("Missing Publisher Name");
-                System.out.println("Failed to publish content");
+                ProjectLogger.log("Missing Publisher Name", LoggerEnum.INFO.name());
+                ProjectLogger.log("Failed to publish content", LoggerEnum.INFO.name());
                 throw new Exception("Missing Publisher Name.");
             }
             if (authorization == null || authorization.isEmpty()) {
-                System.out.println("Missing Authorization Key");
-                System.out.println("Failed to publish content");
+                ProjectLogger.log("Missing Authorization Key", LoggerEnum.INFO.name());
+                ProjectLogger.log("Failed to publish content", LoggerEnum.INFO.name());
                 throw new Exception("Missing Authorization Key.");
             }
             if (authToken == null || authToken.isEmpty()) {
-                System.out.println("Missing Auth Token");
-                System.out.println("Failed to publish content");
+                ProjectLogger.log("Missing Auth Token", LoggerEnum.INFO.name());
+                ProjectLogger.log("Failed to publish content", LoggerEnum.INFO.name());
                 throw new Exception("Missing Auth Token.");
             }
         }
@@ -190,7 +189,7 @@ public class Neo4jLiveContentPublisher {
 //                }
 //                httpPost.setHeader("x-authenticated-user-token", authToken);
 
-//                System.out.println("JSON : " + json);
+//                ProjectLogger.log("JSON : " + json);
 //                return true;
                 status.add(executor.submit(new CallableThread(contentId)));
 
@@ -209,12 +208,12 @@ public class Neo4jLiveContentPublisher {
                     }
                 }
             } catch (InterruptedException | ExecutionException e) {
-                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                ProjectLogger.log("Exception occurred while waiting for the result : " + e.getMessage(), e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
             }
 
         }catch (Exception e) {
-            System.out.println("Failed due to Unknown Exception : " + e.getMessage());
+            ProjectLogger.log("Failed due to Unknown Exception : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
             throw e;
         }
@@ -233,8 +232,8 @@ public class Neo4jLiveContentPublisher {
         @Override
         public String call() {
             try (CloseableHttpClient client = HttpClients.createDefault()) {
-//                System.out.println("Command : " + commandToRun);
-//                System.out.println("Publishing content with Id : " + id);
+//                ProjectLogger.log("Command : " + commandToRun);
+//                ProjectLogger.log("Publishing content with Id : " + id);
                 HttpPost httpPost = new HttpPost(url + id);
                 String json = "{\"request\": {\"content\": { \"publisher\": \""+ publisherName +"\", \"lastPublishedBy\": \""+ publisherId +"\" } } }";
                 StringEntity entity = new StringEntity(json);
@@ -249,7 +248,7 @@ public class Neo4jLiveContentPublisher {
                 httpPost.setHeader("x-authenticated-user-token", authToken);
                 CloseableHttpResponse response = client.execute(httpPost);
                 int apiStatus = response.getStatusLine().getStatusCode();
-                System.out.println("apiStatus for Content id "+ id + " is : " + apiStatus);
+                ProjectLogger.log("apiStatus for Content id "+ id + " is : " + apiStatus, LoggerEnum.INFO.name());
                 if (apiStatus == 200) {
                     return "true";
                 } else {
@@ -259,7 +258,7 @@ public class Neo4jLiveContentPublisher {
 
 
             } catch (Exception e) {
-                System.out.println("Some error occurred while publishing the content : " + id);
+                ProjectLogger.log("Some error occurred while publishing the content : " + id, e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
                 return id;
             }
@@ -275,7 +274,7 @@ public class Neo4jLiveContentPublisher {
 
             writer.close();
         } catch (Exception e) {
-            System.out.println("Failed to Write the File");
+            ProjectLogger.log("Failed to Write the File", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }

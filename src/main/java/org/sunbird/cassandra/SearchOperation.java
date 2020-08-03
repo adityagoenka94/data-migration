@@ -1,6 +1,8 @@
 package org.sunbird.cassandra;
 
 import com.datastax.driver.core.*;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +27,7 @@ public class SearchOperation {
             }
             return frameworks;
         } catch (Exception e) {
-            System.out.println("Failed to get Framework List : " + e.getMessage());
+            ProjectLogger.log("Failed to get Framework List : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             return null;
         }
     }
@@ -33,7 +35,7 @@ public class SearchOperation {
     public List<String> getAllContentHierarchyIdentifier() {
 
         try {
-            System.out.println("Fetching content ids from content hierarchy");
+            ProjectLogger.log("Fetching content ids from content hierarchy", LoggerEnum.INFO.name());
             int count = 0;
             int batchSize = 500;
             Session session = ConnectionManager.getSession();
@@ -50,14 +52,14 @@ public class SearchOperation {
                 count++;
                 contentHierarchy.add(row.getString("identifier"));
                 if (count % batchSize == 0) {
-                    System.out.println("Fetching More Data...");
+                    ProjectLogger.log("Fetching More Data...", LoggerEnum.INFO.name());
                 }
             }
-            System.out.println("Completed");
-            System.out.println("Size of the content hierarchy ; " + contentHierarchy.size());
+            ProjectLogger.log("Completed", LoggerEnum.INFO.name());
+            ProjectLogger.log("Size of the content hierarchy ; " + contentHierarchy.size(), LoggerEnum.INFO.name());
             return contentHierarchy;
         } catch (Exception e) {
-            System.out.println("Failed to get Content Hierarchy : " + e.getMessage());
+            ProjectLogger.log("Failed to get Content Hierarchy : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             return null;
         }
     }
@@ -65,7 +67,7 @@ public class SearchOperation {
     public List<String> getAllContentDataIdentifier() {
 
         try {
-            System.out.println("Fetching content ids from content data");
+            ProjectLogger.log("Fetching content ids from content data", LoggerEnum.INFO.name());
             int count = 0;
             int batchSize = 500;
             Session session = ConnectionManager.getSession();
@@ -80,16 +82,16 @@ public class SearchOperation {
                 count++;
                 contentData.add(row.getString("content_id"));
                 if (count % batchSize == 0) {
-                    System.out.println("Fetching More Data...");
+                    ProjectLogger.log("Fetching More Data...", LoggerEnum.INFO.name());
                 }
             }
-            System.out.println("Completed");
-            System.out.println("Size of the content data ; " + contentData.size());
-//            System.out.println("Count ; " + count);
+            ProjectLogger.log("Completed", LoggerEnum.INFO.name());
+            ProjectLogger.log("Size of the content data ; " + contentData.size(), LoggerEnum.INFO.name());
+//            ProjectLogger.log("Count ; " + count);
 
             return contentData;
         } catch (Exception e) {
-            System.out.println("Failed to get Content Data : " + e.getMessage());
+            ProjectLogger.log("Failed to get Content Data : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
             return null;
         }

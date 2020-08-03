@@ -12,6 +12,8 @@
 
 /target/*
 
+/logs/*
+
 /data-migration.iml
 .idea/
 

@@ -1,6 +1,8 @@
 package org.sunbird.s3;
 
 import org.sunbird.util.PropertiesCache;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,7 +26,7 @@ public class CopyObjectForAssets {
     public List<String> copyS3AssetDataForContentId(Map<String, String> contentData) {
 
         String awsCommand = getAwsCommandForAssetMigration();
-//        System.out.println("AWS build command : " + awsCommand);
+//        ProjectLogger.log("AWS build command : " + awsCommand);
         ExecutorService executor = Executors.newFixedThreadPool(10);
         if(awsCommand != null) {
             List<Future<Boolean>> status = new ArrayList<>();
@@ -32,7 +34,7 @@ public class CopyObjectForAssets {
                 String downloadUrl = entry.getKey();
                 String mime = entry.getValue();
                 String command = new String(awsCommand);
-//                System.out.println("Download Url : " + downloadUrl);
+//                ProjectLogger.log("Download Url : " + downloadUrl);
                 String commandToRun = getS3UrlForAssets(command, downloadUrl, mime);
                 if(!commandToRun.isEmpty())
                     status.add(executor.submit(new CallableThread(commandToRun)));
@@ -44,11 +46,11 @@ public class CopyObjectForAssets {
                     boolean response = status.get(i).get();
                 }
             } catch (InterruptedException | ExecutionException e) {
-                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                ProjectLogger.log("Exception occurred while waiting for the result : " + e.getMessage(), e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
             }
         } else {
-            System.out.println("Please initialize the S3 variables properly.");
+            ProjectLogger.log("Please initialize the S3 variables properly.", LoggerEnum.INFO.name());
         }
         this.awaitTerminationAfterShutdown(executor);
         return commandFailed;
@@ -61,7 +63,7 @@ public class CopyObjectForAssets {
         } catch (Exception ex) {
             threadPool.shutdownNow();
             Thread.currentThread().interrupt();
-            System.out.println("An error occurred while shutting down the Executor Service : " + ex.getMessage());
+            ProjectLogger.log("An error occurred while shutting down the Executor Service : " + ex.getMessage(), ex, LoggerEnum.ERROR.name());
             ex.printStackTrace();
         }
     }
@@ -134,28 +136,28 @@ public class CopyObjectForAssets {
             String contentSubUrl = downloadUrl.replaceAll("https://sl-content-migration.s3.amazonaws.com/","");
             int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
             if(contentSubUrl.startsWith("content/do_")) {
-//                System.out.println("1" + contentSubUrl);
+//                ProjectLogger.log("1" + contentSubUrl);
                 if(index > 0) {
                     String contentFolderUrl = contentSubUrl.substring(0, index);
                     newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
                 } else {
                     newCommand = String.format(command, contentSubUrl, contentSubUrl);
                 }
-//                System.out.println("2" + contentSubUrl);
+//                ProjectLogger.log("2" + contentSubUrl);
             } else if(index > 0) {
                 String contentFolderUrl = contentSubUrl.substring(0, index);
                 newCommand = String.format(command, contentFolderUrl, contentFolderUrl);
             }
             else if (contentSubUrl.startsWith("content/")) {
-//                System.out.println("3" + contentSubUrl);
+//                ProjectLogger.log("3" + contentSubUrl);
                 newCommand = String.format(command, contentSubUrl, contentSubUrl);
                 newCommand = newCommand.replace("--recursive" ,"");
             } else if (contentSubUrl.startsWith("media/")) {
-//                System.out.println("4" + contentSubUrl);
+//                ProjectLogger.log("4" + contentSubUrl);
                 newCommand = String.format(command, contentSubUrl, contentSubUrl);
                 newCommand = newCommand.replace("--recursive" ,"");
             } else {
-//                System.out.println("No Match");
+//                ProjectLogger.log("No Match");
             }
         }
 
@@ -169,8 +171,8 @@ public class CopyObjectForAssets {
             processBuilder.command("/bin/sh", "-c", command);
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-//            System.out.println("Command Generated : " + command);
-//            System.out.println("running the request");
+//            ProjectLogger.log("Command Generated : " + command);
+//            ProjectLogger.log("running the request");
 //            Process process = runtime.exec(new String[] {"/bin/sh", "-c", command});
 //            while (process.isAlive()) {
 //                Thread.sleep(1000);
@@ -178,14 +180,14 @@ public class CopyObjectForAssets {
             result = getResult(process);
             int exitVal = process.waitFor();
             if(exitVal == 0) {
-//                System.out.println("received exit code 0");
+//                ProjectLogger.log("received exit code 0");
 //                result = getResult(process);
 //                boolean status = verifyCurrentContentMigration(result);
                 return true;
             }  else {
-//                System.out.println("received exit code not 0");
+//                ProjectLogger.log("received exit code not 0");
 //                result = getResult(process);
-                System.out.println("Failed for command : " + command);
+                ProjectLogger.log("Failed for command : " + command, LoggerEnum.INFO.name());
                 throw new Exception("Command terminated abnormally : " + result);
             }
         }
@@ -195,7 +197,7 @@ public class CopyObjectForAssets {
 //            addAllContentIdsForFailedList(currentContentIds);
 //        }
         catch (Exception e) {
-            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
+            ProjectLogger.log("Some error occurred while running the aws command : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
             commandFailed.add(command);
 //            addAllContentIdForFailedList(currentContentIds);
@@ -211,7 +213,7 @@ public class CopyObjectForAssets {
             result.append(line);
         }
 
-//        System.out.println(result.toString());
+//        ProjectLogger.log(result.toString());
 
         return result.toString();
     }
@@ -238,13 +240,13 @@ public class CopyObjectForAssets {
         @Override
         public Boolean call() {
             try {
-//                System.out.println("Command : " + commandToRun);
+//                ProjectLogger.log("Command : " + commandToRun);
                 return runS3ShellCommand(commandToRun);
 //                return true;
 
 
             } catch (Exception e) {
-                System.out.println("Some error occurred while running the aws script.");
+                ProjectLogger.log("Some error occurred while running the aws script.", e, LoggerEnum.ERROR.name());
                 return false;
             }
         }

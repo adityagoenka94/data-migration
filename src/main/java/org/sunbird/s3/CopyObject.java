@@ -2,6 +2,8 @@ package org.sunbird.s3;
 
 import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,7 +26,7 @@ public class CopyObject {
     public List<String> copyS3ContentDataForContentIdV2(Map<String, String> contentData) {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
-        System.out.println("AWS build command : " + awsCommand);
+        ProjectLogger.log("AWS build command : " + awsCommand, LoggerEnum.INFO.name());
         ExecutorService executor = Executors.newFixedThreadPool(10);
         if(awsCommand != null) {
             int total = contentData.size();
@@ -51,8 +53,8 @@ public class CopyObject {
 //                    runS3ShellCommand(commandToRun, new String[]{id});
 
                 } catch (Exception e) {
-                    System.out.println("Failed for the command : " + commandToRun);
-                    System.out.println(e.getMessage());
+                    ProjectLogger.log("Failed for the command : " + commandToRun, e, LoggerEnum.ERROR.name());
+                    ProjectLogger.log(e.getMessage(), e, LoggerEnum.ERROR.name());
                 }
             }
 
@@ -62,11 +64,11 @@ public class CopyObject {
                     Progress.printProgress(startTime, total, i+1);
                 }
             } catch (InterruptedException | ExecutionException e) {
-                System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                ProjectLogger.log("Exception occurred while waiting for the result : " + e.getMessage(), e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
             }
         } else {
-            System.out.println("Please initialize the S3 variables properly.");
+            ProjectLogger.log("Please initialize the S3 variables properly.", LoggerEnum.INFO.name());
         }
         this.awaitTerminationAfterShutdown(executor);
         return commandFailed;
@@ -132,7 +134,7 @@ public class CopyObject {
             processBuilder.command("/bin/sh", "-c", command);
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-//            System.out.println("Command Generated : " + command);
+//            ProjectLogger.log("Command Generated : " + command);
             result = getResult(process);
             int exitVal = process.waitFor();
             if(exitVal == 0) {
@@ -143,7 +145,7 @@ public class CopyObject {
             }
         }
         catch (Exception e) {
-            System.out.println("Some error occurred while running the aws command : " + e.getMessage());
+            ProjectLogger.log("Some error occurred while running the aws command : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
             commandFailed.add(command);
             addAllContentIdForFailedList(currentContentIds);
@@ -159,7 +161,7 @@ public class CopyObject {
             result.append(line);
         }
 
-//        System.out.println(result.toString());
+//        ProjectLogger.log(result.toString());
 
         return result.toString();
     }
@@ -192,13 +194,13 @@ public class CopyObject {
         @Override
         public Boolean call() {
             try {
-//                System.out.println("Command : " + commandToRun);
+//                ProjectLogger.log("Command : " + commandToRun);
                 return runS3ShellCommand(commandToRun, id);
 //                return true;
 
 
             } catch (Exception e) {
-                System.out.println("Some error occurred while running the aws script.");
+                ProjectLogger.log("Some error occurred while running the aws script.", e, LoggerEnum.ERROR.name());
                 return false;
             }
         }
@@ -211,7 +213,7 @@ public class CopyObject {
         } catch (Exception ex) {
             threadPool.shutdownNow();
             Thread.currentThread().interrupt();
-            System.out.println("An error occurred while shutting down the Executor Service : " + ex.getMessage());
+            ProjectLogger.log("An error occurred while shutting down the Executor Service : " + ex.getMessage(), ex, LoggerEnum.ERROR.name());
             ex.printStackTrace();
         }
     }
@@ -221,7 +223,7 @@ public class CopyObject {
 
         try {
             String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
-            System.out.println("AWS build command : " + awsCommand);
+            ProjectLogger.log("AWS build command : " + awsCommand, LoggerEnum.INFO.name());
             ExecutorService executor = Executors.newFixedThreadPool(10);
             if (awsCommand != null) {
 //            int total = contentData.size();
@@ -230,12 +232,12 @@ public class CopyObject {
 //            Map<String, String> commandList = new HashMap<>();
                 for (Map.Entry<String, List> entry : contentData.entrySet()) {
                     String mimeType = entry.getKey();
-//                    System.out.println("Making request for MimeType : " + mimeType);
+//                    ProjectLogger.log("Making request for MimeType : " + mimeType);
                     List ids = entry.getValue();
                     for (Object iterator : ids) {
                         String id = (String) iterator;
                         String command = new String(awsCommand);
-//                        System.out.println("Making request for id : " + id);
+//                        ProjectLogger.log("Making request for id : " + id);
 //                        new MimeCallableThread(command, id, mimeType).run();
                         status.add(executor.submit(new MimeCallableThread(command, id, mimeType)));
                     }
@@ -249,15 +251,15 @@ public class CopyObject {
                         Progress.printProgress(startTime, statusSize, i + 1);
                     }
                 } catch (InterruptedException | ExecutionException e) {
-                    System.out.println("Exception occurred while waiting for the result : " + e.getMessage());
+                    ProjectLogger.log("Exception occurred while waiting for the result : " + e.getMessage(), e, LoggerEnum.ERROR.name());
                     e.printStackTrace();
                 }
             } else {
-                System.out.println("Please initialize the S3 variables properly.");
+                ProjectLogger.log("Please initialize the S3 variables properly.", LoggerEnum.INFO.name());
             }
             this.awaitTerminationAfterShutdown(executor);
         } catch (Exception e) {
-            System.out.println("Failed in copyS3ContentDataForMimes : " + e.getMessage());
+            ProjectLogger.log("Failed in copyS3ContentDataForMimes : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
         return commandFailed;
@@ -304,7 +306,7 @@ public class CopyObject {
                 while(status) {
                     String folderId = i + ".0";
                     String commandToRun = getContentS3UrlForMime(command, id, mimeType, folderId);
-                    System.out.println("Command : " + commandToRun);
+                    ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
                     boolean check = runS3ShellCommand(commandToRun, id);
 //                    check = false;
                     if(check) {
@@ -315,16 +317,16 @@ public class CopyObject {
                 }
 
                 String commandToRun = getContentS3UrlForMime(command, id, mimeType, "latest");
-                System.out.println("Command : " + commandToRun);
+                ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
                 boolean check1 = runS3ShellCommand(commandToRun, id);
 //                boolean check1 = true;
                 commandToRun = getContentS3UrlForMime(command, id, mimeType, "snapshot");
-                System.out.println("Command : " + commandToRun);
+                ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
                 boolean check2 = runS3ShellCommand(commandToRun, id);
 
                 return check1;
             } catch (Exception e) {
-                System.out.println("Some error occurred while running the aws script.");
+                ProjectLogger.log("Some error occurred while running the aws script.", e, LoggerEnum.ERROR.name());
                 return false;
             }
         }

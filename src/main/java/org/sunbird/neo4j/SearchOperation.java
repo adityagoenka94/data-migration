@@ -3,6 +3,8 @@ package org.sunbird.neo4j;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,16 +23,16 @@ public class SearchOperation {
                 StatementResult result = session.beginTransaction().run(query);
                 while (result.hasNext()) {
                     Record record = result.next();
-//                    System.out.println("result : " + record.get("IDS").asObject());
-                    System.out.println(
-                            "Content ID Count : " + record.get("count").asLong());
+//                    ProjectLogger.log("result : " + record.get("IDS").asObject());
+                    ProjectLogger.log(
+                            "Content ID Count : " + record.get("count").asLong(), LoggerEnum.INFO.name());
                     ids = record.get("contentids").asList();
-//                    System.out.println(
+//                    ProjectLogger.log(
 //                            "Content ID is array : " + ids);
                     session.close();
                 }
         } catch (Exception e) {
-                System.out.println("Failed to fetch Content Ids from Neo4j.");
+                ProjectLogger.log("Failed to fetch Content Ids from Neo4j.", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
         return ids;
@@ -45,19 +47,19 @@ public class SearchOperation {
             StatementResult result = session.beginTransaction().run(query);
             while (result.hasNext()) {
                 Record record = result.next();
-//                    System.out.println("result : " + record.get("IDS").asObject());
-//                    System.out.println(
+//                    ProjectLogger.log("result : " + record.get("IDS").asObject());
+//                    ProjectLogger.log(
 //                            "Content ID Count : " + record.get("count").asLong());
                 String id = record.get("IDS").asString();
                 String mimeType = record.get("MIME").asString();
                 contentData.put(id, mimeType);
 //                    ids = record.get("contentids").asList();
-//                    System.out.println(
+//                    ProjectLogger.log(
 //                            "Content ID is array : " + ids);
             }
             session.close();
         } catch (Exception e) {
-            System.out.println("Failed to fetch Content Ids from Neo4j.");
+            ProjectLogger.log("Failed to fetch Content Ids from Neo4j.", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
         return contentData;
@@ -76,10 +78,10 @@ public class SearchOperation {
             while (result.hasNext()) {
                 Record record = result.next();
                 assetCount = record.get("COUNT").asInt();
-                System.out.println("Total asset count to be migrated : " + assetCount);
+                ProjectLogger.log("Total asset count to be migrated : " + assetCount, LoggerEnum.INFO.name());
             }
         } catch (Exception e) {
-            System.out.println("Failed to fetch Count of Assets from Neo4j.");
+            ProjectLogger.log("Failed to fetch Count of Assets from Neo4j.", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         } finally {
             if(session != null) {
@@ -104,7 +106,7 @@ public class SearchOperation {
                 contentData.put(downloadUrl, mime);
             }
         } catch (Exception e) {
-            System.out.println("Failed to fetch Content Ids from Neo4j : " + e.getMessage());
+            ProjectLogger.log("Failed to fetch Content Ids from Neo4j : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
         return contentData;
@@ -120,19 +122,19 @@ public class SearchOperation {
             StatementResult result = session.beginTransaction().run(query);
             while (result.hasNext()) {
                 Record record = result.next();
-//                    System.out.println("result : " + record.get("IDS").asObject());
-//                    System.out.println(
+//                    ProjectLogger.log("result : " + record.get("IDS").asObject());
+//                    ProjectLogger.log(
 //                            "Content ID Count : " + record.get("count").asLong());
                 List ids = record.get("IDS").asList();
                 String mimeType = record.get("MIME").asString();
                 contentData.put(mimeType, ids);
 //                    ids = record.get("contentids").asList();
-//                    System.out.println(
+//                    ProjectLogger.log(
 //                            "Content ID is array : " + ids);
             }
             session.close();
         } catch (Exception e) {
-            System.out.println("Failed to fetch Content Ids from Neo4j.");
+            ProjectLogger.log("Failed to fetch Content Ids from Neo4j.", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
         return contentData;
@@ -151,10 +153,10 @@ public class SearchOperation {
             while (result.hasNext()) {
                 Record record = result.next();
                 liveContentCount = record.get("COUNT").asInt();
-                System.out.println("Total Live Content count to be published : " + liveContentCount);
+                ProjectLogger.log("Total Live Content count to be published : " + liveContentCount, LoggerEnum.INFO.name());
             }
         } catch (Exception e) {
-            System.out.println("Failed to fetch count of Live Content from Neo4j.");
+            ProjectLogger.log("Failed to fetch count of Live Content from Neo4j.", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         } finally {
             if(session != null) {
@@ -177,7 +179,55 @@ public class SearchOperation {
                 ids.add(id);
             }
         } catch (Exception e) {
-            System.out.println("Failed to fetch Content Ids from Neo4j.");
+            ProjectLogger.log("Failed to fetch Content Ids from Neo4j.", e, LoggerEnum.ERROR.name());
+            e.printStackTrace();
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+        return ids;
+    }
+
+    public int getAllCollectionContentCount() {
+
+        int collectionContentCount = 0;
+        Session session = null;
+        String query = "MATCH (n) WHERE n.mimeType='application/vnd.ekstep.content-collection' WITH count(*) AS COUNT return COUNT;";
+        try {
+            session = ConnectionManager.getSession();
+//                StatementResult result = session.run(query);
+            StatementResult result = session.beginTransaction().run(query);
+            while (result.hasNext()) {
+                Record record = result.next();
+                collectionContentCount = record.get("COUNT").asInt();
+                ProjectLogger.log("Total Content count to be migrated : " + collectionContentCount, LoggerEnum.INFO.name());
+            }
+        } catch (Exception e) {
+            ProjectLogger.log("Failed to fetch count of Collection Content from Neo4j.", e, LoggerEnum.ERROR.name());
+            e.printStackTrace();
+        } finally {
+            if(session != null) {
+                session.close();
+            }
+        }
+        return collectionContentCount;
+    }
+
+    public List getAllCollectionContentIds(int skip, int size) {
+        List<String> ids = new ArrayList<>();
+        Session session = ConnectionManager.getSession();
+        String query = "MATCH (n) WHERE n.mimeType='application/vnd.ekstep.content-collection' return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
+        String formattedQuery = String.format(new String(query), skip, size);
+        try {
+            StatementResult result = session.beginTransaction().run(formattedQuery);
+            while (result.hasNext()) {
+                Record record = result.next();
+                String id = record.get("contentids").asString();
+                ids.add(id);
+            }
+        } catch (Exception e) {
+            ProjectLogger.log("Failed to fetch Collection Content Ids from Neo4j.", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         } finally {
             if (session != null) {

@@ -7,6 +7,8 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.util.*;
 
@@ -43,7 +45,7 @@ public class ContentS3UrlUpdater {
                 getS3Urls();
 
                 if(oldS3Url.isEmpty() || newS3Url.isEmpty()) {
-                    System.out.println("Missing s3 urls.");
+                    ProjectLogger.log("Missing s3 urls.", LoggerEnum.INFO.name());
                 } else {
                     while (status) {
                         transaction = session.beginTransaction();
@@ -68,11 +70,11 @@ public class ContentS3UrlUpdater {
                     }
                 }
             } else {
-                System.out.println("No data of type Content or ContentImage in Neo4j.");
+                ProjectLogger.log("No data of type Content or ContentImage in Neo4j.", LoggerEnum.INFO.name());
             }
             session.close();
         } catch (Exception e) {
-            System.out.println("Failed to fetch data from Neo4j due to : " + e.getMessage());
+            ProjectLogger.log("Failed to fetch data from Neo4j due to : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
         return failedIds;
@@ -121,7 +123,7 @@ public class ContentS3UrlUpdater {
                     updateNode(id, updateValues, transaction);
                 }
             } catch (Exception e) {
-                System.out.println("Failed for Node Id : " + id + " due to " + e.getMessage());
+                ProjectLogger.log("Failed for Node Id : " + id + " due to " + e.getMessage(), e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
                 failedIds.add(id);
             }
@@ -141,20 +143,20 @@ public class ContentS3UrlUpdater {
                 updateQuery = updateQuery.deleteCharAt(updateQuery.length()-1);
                 updateQuery.append(" return n;");
 
-//                System.out.println("Update query : " + updateQuery.toString());
+//                ProjectLogger.log("Update query : " + updateQuery.toString());
 
                 StatementResult result = transaction.run(updateQuery.toString());
                 if (result.hasNext()) {
-//                    System.out.println("Transaction Success");
+//                    ProjectLogger.log("Transaction Success");
                     return true;
                 } else {
-                    System.out.println("Transaction Failed");
+                    ProjectLogger.log("Transaction Failed", LoggerEnum.INFO.name());
                     failedIds.add(id);
                     return false;
                 }
             }
         } catch (Exception e) {
-            System.out.println("Failed for Node Id : " + id + " due to " + e.getMessage());
+            ProjectLogger.log("Failed for Node Id : " + id + " due to " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
             failedIds.add(id);
         }

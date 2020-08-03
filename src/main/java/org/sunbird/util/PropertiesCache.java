@@ -1,6 +1,9 @@
 package org.sunbird.util;
 
 
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -22,7 +25,7 @@ public class PropertiesCache {
             }
             catch (IOException e)
             {
-                System.out.println("Error while reading Files.");
+                ProjectLogger.log("Error while reading Files.", e, LoggerEnum.ERROR.name());
             }
         }
 

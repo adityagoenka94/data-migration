@@ -2,6 +2,7 @@ package org.sunbird;
 
 import org.neo4j.driver.v1.Session;
 import org.sunbird.cassandra.DeleteOperation;
+import org.sunbird.hierarchy.Neo4jToCassandraHierarchyManager;
 import org.sunbird.neo4j.ConnectionManager;
 import org.sunbird.neo4j.ContentS3UrlUpdater;
 import org.sunbird.neo4j.SearchOperation;
@@ -9,6 +10,8 @@ import org.sunbird.publish.Neo4jLiveContentPublisher;
 import org.sunbird.s3.CopyObject;
 import org.sunbird.s3.CopyObjectForAssets;
 import org.sunbird.util.Progress;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 //import org.sunbird.s3.CopyObjectThroughSDK;
 
 import java.io.*;
@@ -27,16 +30,17 @@ public class App
 
         boolean check = true;
         while(check) {
-            System.out.println("Enter 1 to get Content Id list from Neo4j");
-            System.out.println("Enter 2 to filter content and framework data from Cassandra.");
-            System.out.println("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType contents.");
-            System.out.println("Enter 4 to perform S3 data migration for Neo4j Content for ecml, html and h5p mimeType only.");
-            System.out.println("Enter 5 to perform S3 data migration for Neo4j Assets.");
-            System.out.println("Enter 6 to update the S3 Urls of all the Neo4j Contents.");
-            System.out.println("Enter 7 to Republish all Live contents of Neo4j.");
-            System.out.println("Enter 8 to Republish specific content ids of Neo4j.");
-            System.out.println("Enter 9 to EXIT");
-//        System.out.println("Enter 5 to perform data migration for specific Content Ids Using SDK");
+            ProjectLogger.log("Enter 1 to get Content Id list from Neo4j", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 2 to filter content and framework data from Cassandra.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 3 to perform S3 data migration for Neo4j Content except for ecml, html and h5p mimeType contents.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 4 to perform S3 data migration for Neo4j Content for ecml, html and h5p mimeType only.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 5 to perform S3 data migration for Neo4j Assets.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 6 to update the S3 Urls of all the Neo4j Contents.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 7 to Republish all Live contents of Neo4j.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 8 to Republish specific content ids of Neo4j.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 9 to Migrate Hierarchy of Contents form Cassandra to Neo4j.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 10 to EXIT", LoggerEnum.INFO.name());
+//        ProjectLogger.log("Enter 5 to perform data migration for specific Content Ids Using SDK");
             Scanner scanner = new Scanner(System.in);
 
             int option = scanner.nextInt();
@@ -45,7 +49,7 @@ public class App
             Map<String, String> contentData;
             switch(option) {
                 case 1:
-                    System.out.println("Enter CSV file Path");
+                    ProjectLogger.log("Enter CSV file Path", LoggerEnum.INFO.name());
                     String filePath = scanner.nextLine();
                     FileWriter fileWriter = new FileWriter(filePath);
                     PrintWriter printWriter = new PrintWriter(fileWriter);
@@ -56,7 +60,7 @@ public class App
                     }
                     printWriter.close();
                     fileWriter.close();
-                    System.out.println("Completed");
+                    ProjectLogger.log("Completed", LoggerEnum.INFO.name());
                     break;
                 case 2 :
                     DeleteOperation deleteOperation = new DeleteOperation();
@@ -69,15 +73,15 @@ public class App
                     if(contentData.size() > 0) {
                         List<String> contentFailed = s3CopyObject.copyS3ContentDataForContentIdV2(contentData);
                         if(contentFailed.size() > 0) {
-                            System.out.println();
-                            System.out.println("Failed for some content");
+                            ProjectLogger.log("", LoggerEnum.INFO.name());
+                            ProjectLogger.log("Failed for some content", LoggerEnum.INFO.name());
                             writeTofile(contentFailed);
                         } else {
-                            System.out.println("Process completed Successfully for all Content of Neo4j.");
+                            ProjectLogger.log("Process completed Successfully for all Content of Neo4j.", LoggerEnum.INFO.name());
                         }
                     }
                     else {
-                        System.out.println("Neo4j has no Content.");
+                        ProjectLogger.log("Neo4j has no Content.", LoggerEnum.INFO.name());
                     }
                     break;
                 case 4:
@@ -85,16 +89,16 @@ public class App
                     if(contentDataForMime.size() > 0) {
                         List<String> contentFailed = s3CopyObject.copyS3ContentDataForMimes(contentDataForMime);
                         if(contentFailed.size() > 0) {
-                            System.out.println();
-                            System.out.println("Failed for some content");
+                            ProjectLogger.log("", LoggerEnum.INFO.name());
+                            ProjectLogger.log("Failed for some content", LoggerEnum.INFO.name());
                             writeTofile(contentFailed);
 
                         } else {
-                            System.out.println("Process completed Successfully for all Content of Neo4j.");
+                            ProjectLogger.log("Process completed Successfully for all Content of Neo4j.", LoggerEnum.INFO.name());
                         }
                     }
                     else {
-                        System.out.println("Neo4j has no Content.");
+                        ProjectLogger.log("Neo4j has no Content.", LoggerEnum.INFO.name());
                     }
                     break;
                 case 5:
@@ -129,19 +133,19 @@ public class App
                                 }
                             }
                         } else {
-                            System.out.println("No data of type Content or ContentImage in Neo4j.");
+                            ProjectLogger.log("No data of type Content or ContentImage in Neo4j.", LoggerEnum.INFO.name());
                         }
 
                         if(failStatus) {
-                            System.out.println();
-                            System.out.println("Failed for some content");
-                            System.out.println("Please check the Error File");
+                            ProjectLogger.log("", LoggerEnum.INFO.name());
+                            ProjectLogger.log("Failed for some content", LoggerEnum.INFO.name());
+                            ProjectLogger.log("Please check the Error File", LoggerEnum.INFO.name());
                         } else {
-                            System.out.println("Process completed Successfully for all Content of Neo4j.");
+                            ProjectLogger.log("Process completed Successfully for all Content of Neo4j.", LoggerEnum.INFO.name());
                         }
                     } catch (Exception e) {
-                        System.out.println("Failed to fetch data from Neo4j due to : " + e.getMessage());
-                        e.printStackTrace();
+                        ProjectLogger.log("Failed to fetch data from Neo4j due to : " + e.getMessage(), e, LoggerEnum.ERROR.name());
+//                        e.printStackTrace();
                     } finally {
                         if(session != null) {
                             session.close();
@@ -152,11 +156,11 @@ public class App
                     ContentS3UrlUpdater updater = new ContentS3UrlUpdater();
                     List<Integer> failedId = updater.updateContentDataS3Urls();
                     if(failedId.size() > 0) {
-                        System.out.println();
-                        System.out.println("Failed for some ids");
+                        ProjectLogger.log("", LoggerEnum.INFO.name());
+                        ProjectLogger.log("Failed for some ids", LoggerEnum.INFO.name());
                         writeNodeIdsTofile(failedId);
                     } else {
-                        System.out.println("Process completed Successfully for all Content of Neo4j.");
+                        ProjectLogger.log("Process completed Successfully for all Content of Neo4j.", LoggerEnum.INFO.name());
                     }
                     break;
                 case 7:
@@ -164,7 +168,7 @@ public class App
                     contentPublisher.publishAllContents();
                     break;
                 case 8:
-                    System.out.println("Enter File Path.");
+                    ProjectLogger.log("Enter File Path.", LoggerEnum.INFO.name());
                     String contents = "";
                     String FileName = "";
                     try {
@@ -187,6 +191,7 @@ public class App
                             contents = contents.replace("]", "");
                         }
                     } catch (Exception e) {
+                        ProjectLogger.log("Failed ro format provided contents due to : " + e.getMessage(), e, LoggerEnum.ERROR.name());
                         e.printStackTrace();
                     }
                     String[] contentIds = contents.split(",");
@@ -195,12 +200,16 @@ public class App
                         contentPublisherForIds.verifyProperties();
                         contentPublisherForIds.publishContentsForIds(contentIds);
                     } else {
-                        System.out.println("Please enter some ids as comma separated values.");
+                        ProjectLogger.log("Please enter some ids as comma separated values.", LoggerEnum.INFO.name());
                     }
                     break;
                 case 9:
-                    System.out.println();
-                    System.out.println("Bye Bye !!");
+                    Neo4jToCassandraHierarchyManager hierarchyManager = new Neo4jToCassandraHierarchyManager();
+                    hierarchyManager.migrateAllContentsHierarchy();
+                    break;
+                case 10:
+                    ProjectLogger.log("", LoggerEnum.INFO.name());
+                    ProjectLogger.log("Bye Bye !!", LoggerEnum.INFO.name());
                     check = false;
                     break;
 //                case 5:
@@ -213,22 +222,22 @@ public class App
 //                    CopyObjectThroughSDK copyObjectThroughSDK = new CopyObjectThroughSDK();
 //                    failedContent = copyObjectThroughSDK.copyS3ContentDataForContentIds(contentIds);
 //                    if(failedContent.size() > 0) {
-//                        System.out.println("Failed for content with IDS : " + failedContent);
+//                        ProjectLogger.log("Failed for content with IDS : " + failedContent);
 //                    } else {
-//                        System.out.println("Process completed Successfully for all Content Ids.");
+//                        ProjectLogger.log("Process completed Successfully for all Content Ids.");
 //                    }
 //                } else {
-//                    System.out.println("Process provide some content Ids.");
+//                    ProjectLogger.log("Process provide some content Ids.");
 //                }
                 default:
-                    System.out.println("Wrong option selected.");
+                    ProjectLogger.log("Wrong option selected.", LoggerEnum.INFO.name());
                     check = false;
             }
             if (check) {
-                System.out.println();
-                System.out.println("*************************************************************************");
-                System.out.println();
-                System.out.println();
+                ProjectLogger.log("", LoggerEnum.INFO.name());
+                ProjectLogger.log("*************************************************************************", LoggerEnum.INFO.name());
+                ProjectLogger.log("", LoggerEnum.INFO.name());
+                ProjectLogger.log("", LoggerEnum.INFO.name());
             }
 
         }
@@ -236,7 +245,7 @@ public class App
     }
 
     public static List<String> getInputContentIds(Scanner scanner) {
-        System.out.println("Enter Content ids as comma seperated values");
+        ProjectLogger.log("Enter Content ids as comma seperated values", LoggerEnum.INFO.name());
         String contntId = scanner.nextLine();
         String[] contents = contntId.trim().split(",");
         List<String> contentIds = Arrays.asList(contents);
@@ -255,7 +264,7 @@ public class App
 
             writer.close();
         } catch (Exception e) {
-            System.out.println("Failed to Write the File");
+            ProjectLogger.log("Failed to Write the File", e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }
@@ -267,7 +276,7 @@ public class App
 
             writer.close();
         } catch (Exception e) {
-            System.out.println("Failed to Write the File");
+            ProjectLogger.log("Failed to Write the File", e,  LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }
@@ -280,7 +289,7 @@ public class App
 
             writer.close();
         } catch (Exception e) {
-            System.out.println("Failed to Write the File");
+            ProjectLogger.log("Failed to Write the File", e,  LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }

@@ -3,6 +3,8 @@ package org.sunbird.neo4j;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.sunbird.util.PropertiesCache;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 public class ConnectionManager {
 
@@ -12,7 +14,7 @@ public class ConnectionManager {
 
     static {
         propertiesCache = PropertiesCache.getInstance();
-        System.out.println("Creating connection with the Neo4j Database");
+        ProjectLogger.log("Creating connection with the Neo4j Database", LoggerEnum.INFO.name());
         // Checking if the Neo4j Url is provided
         String url = null;
         Config config = Config.builder()
@@ -28,23 +30,23 @@ public class ConnectionManager {
                     driver = GraphDatabase.driver(url, config);
 //                    connection = DriverManager.getConnection(url);
 //                    connection.setReadOnly(true);
-                    System.out.println("Connection created with the Neo4j Database successfully");
+                    ProjectLogger.log("Connection created with the Neo4j Database successfully", LoggerEnum.INFO.name());
                 } catch (AuthenticationException e) {
 //                    connection = DriverManager.getConnection(url, propertiesCache.getProperty("neo4j_username"), propertiesCache.getProperty("neo4j_password"));
                     driver = GraphDatabase.driver(
                             url, AuthTokens.basic(propertiesCache.getProperty("neo4j_username"), propertiesCache.getProperty("neo4j_password")),config);
 //                    connection.setReadOnly(true);
-                    System.out.println("Connection created with the Neo4j Database successfully");
+                    ProjectLogger.log("Connection created with the Neo4j Database successfully", LoggerEnum.INFO.name());
                 }
             } catch (AuthenticationException e) {
-                System.out.println("Unable to connect to Neo4j Database");
+                ProjectLogger.log("Unable to connect to Neo4j Database", e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
             } catch (Exception e) {
-                System.out.println("Unable to connect to Neo4j Database");
+                ProjectLogger.log("Unable to connect to Neo4j Database", e, LoggerEnum.ERROR.name());
                 e.printStackTrace();
             }
         } else {
-            System.out.println("neo4j_url variable missing. Cannot connect to database.");
+            ProjectLogger.log("neo4j_url variable missing. Cannot connect to database.", LoggerEnum.INFO.name());
             System.exit(-1);
         }
         registerShutdownHook();
@@ -62,7 +64,7 @@ public class ConnectionManager {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.out.println("Closing Neo4j Graph Driver...");
+                ProjectLogger.log("Closing Neo4j Graph Driver...", LoggerEnum.INFO.name());
                 try {
                     if (null != driver)
                         driver.close();

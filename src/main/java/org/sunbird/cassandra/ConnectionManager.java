@@ -4,6 +4,8 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import org.sunbird.util.PropertiesCache;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -22,15 +24,15 @@ public class ConnectionManager {
                             new InetSocketAddress(propertiesCache.getProperty("cassandra_host"), Integer.parseInt(propertiesCache.getProperty("cassandra_port")))))
                     .withoutJMXReporting()
                     .build();
-            System.out.println("Connecting to cassandra db");
+            ProjectLogger.log("Connecting to cassandra db", LoggerEnum.INFO.name());
             session = cluster.connect();
-            System.out.println("Connected to cassandra db");
+            ProjectLogger.log("Connected to cassandra db", LoggerEnum.INFO.name());
             shutDownHook();
         } catch (NoHostAvailableException e) {
-            System.out.println("Exception occured while connecting to the host ; " + e.getMessage());
+            ProjectLogger.log("Exception occured while connecting to the host ; " + e.getMessage(), e, LoggerEnum.ERROR.name());
             System.exit(-1);
         } catch (Exception ex) {
-            System.out.println("Failed to connect to cassandra : " + ex.getMessage());
+            ProjectLogger.log("Failed to connect to cassandra : " + ex.getMessage(), ex, LoggerEnum.ERROR.name());
             System.exit(-1);
         }
     }
@@ -47,14 +49,14 @@ public class ConnectionManager {
     static class CassandraConnection extends Thread {
         @Override
         public void run() {
-            System.out.println("Killing Cassandra Connection.");
+            ProjectLogger.log("Killing Cassandra Connection.", LoggerEnum.INFO.name());
             try {
                 if (session != null) {
                     session.close();
                     cluster.close();
                 }
             } catch (Exception e) {
-                System.out.println("failed to kill Cassandra Connection : " + e.getMessage());
+                ProjectLogger.log("failed to kill Cassandra Connection : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             }
         }
     }

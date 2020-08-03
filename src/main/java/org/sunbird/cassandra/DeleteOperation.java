@@ -3,6 +3,8 @@ package org.sunbird.cassandra;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import org.sunbird.util.Progress;
+import org.sunbird.util.logger.LoggerEnum;
+import org.sunbird.util.logger.ProjectLogger;
 
 import java.util.List;
 
@@ -34,13 +36,13 @@ public class DeleteOperation {
                 query = query.deleteCharAt(query.lastIndexOf(","));
                 query.append(");");
 
-                System.out.println("Query to delete Framework hierarchy data : "+query);
+                ProjectLogger.log("Query to delete Framework hierarchy data : "+query, LoggerEnum.INFO.name());
 
                 ResultSet rs = session.execute(query.toString());
             }
-            System.out.println("Successfully delete Framework hierarchy other than 'NCF'.");
+            ProjectLogger.log("Successfully delete Framework hierarchy other than 'NCF'.", LoggerEnum.INFO.name());
         } catch (Exception e) {
-            System.out.println("Failed to delete Framework hierarchy : " + e.getMessage());
+            ProjectLogger.log("Failed to delete Framework hierarchy : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }
@@ -63,7 +65,7 @@ public class DeleteOperation {
             neo4jContentList = null;
 
             int total = contentIdentifier.size();
-            System.out.println("Deleting content hierarchy data for count = "+ total);
+            ProjectLogger.log("Deleting content hierarchy data for count = "+ total, LoggerEnum.INFO.name());
 
             int current = 0;
             long startTime = System.currentTimeMillis();
@@ -85,16 +87,16 @@ public class DeleteOperation {
                 query = query.deleteCharAt(query.lastIndexOf(","));
                 query.append(");");
 
-//                System.out.println("Query to delete content hierarchy data : "+query);
+//                ProjectLogger.log("Query to delete content hierarchy data : "+query);
                 ResultSet rs = session.execute(query.toString());
                 current += batch;
                 Progress.printProgress(startTime, total, current);
             }
 
 //            printProgress(startTime, total, current);
-            System.out.println("Successfully deleted hierarchy for contents not present in Neo4j.");
+            ProjectLogger.log("Successfully deleted hierarchy for contents not present in Neo4j.", LoggerEnum.INFO.name());
         } catch (Exception e) {
-            System.out.println("Failed to delete content hierarchy : " + e.getMessage());
+            ProjectLogger.log("Failed to delete content hierarchy : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }
@@ -105,7 +107,7 @@ public class DeleteOperation {
             Session session = ConnectionManager.getSession();
             List<String> contentIdentifier = searchOperation.getAllContentDataIdentifier();
             if(contentIdentifier != null) {
-                System.out.println("content data for count = " + contentIdentifier.size());
+                ProjectLogger.log("content data for count = " + contentIdentifier.size(), LoggerEnum.INFO.name());
                 List neo4jContentList = neo4jSearch.getContentIds();
 
                 for (Object identity : neo4jContentList) {
@@ -118,7 +120,7 @@ public class DeleteOperation {
                 neo4jContentList = null;
 
                 int total = contentIdentifier.size();
-                System.out.println("Deleting content data for count = " + total);
+                ProjectLogger.log("Deleting content data for count = " + total, LoggerEnum.INFO.name());
 
                 int current = 0;
                 long startTime = System.currentTimeMillis();
@@ -140,17 +142,17 @@ public class DeleteOperation {
                     query = query.deleteCharAt(query.lastIndexOf(","));
                     query.append(");");
 
-//                System.out.println("Query to delete content hierarchy data : "+query);
+//                ProjectLogger.log("Query to delete content hierarchy data : "+query);
                     ResultSet rs = session.execute(query.toString());
                     current += batch;
                     Progress.printProgress(startTime, total, current);
                 }
 
 //            printProgress(startTime, total, current);
-                System.out.println("Successfully deleted data for contents not present in Neo4j.");
+                ProjectLogger.log("Successfully deleted data for contents not present in Neo4j.", LoggerEnum.INFO.name());
             }
         } catch (Exception e) {
-            System.out.println("Failed to delete content data : " + e.getMessage());
+            ProjectLogger.log("Failed to delete content data : " + e.getMessage(), e, LoggerEnum.ERROR.name());
             e.printStackTrace();
         }
     }
