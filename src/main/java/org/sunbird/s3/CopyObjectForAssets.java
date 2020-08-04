@@ -21,10 +21,12 @@ public class CopyObjectForAssets {
     private String[] mimeTypesNotToHandle = new String[]{
             "text/x-url"};
     List<String> notMime = Arrays.asList(mimeTypesNotToHandle);
+    String oldS3Url;
 
 
-    public List<String> copyS3AssetDataForContentId(Map<String, String> contentData) {
+    public List<String> copyS3AssetDataForContentId(Map<String, String> contentData, String oldS33Url) {
 
+        this.oldS3Url = oldS33Url;
         String awsCommand = getAwsCommandForAssetMigration();
         ProjectLogger.log("AWS build command : " , awsCommand);
         ExecutorService executor = Executors.newFixedThreadPool(20);
@@ -36,6 +38,7 @@ public class CopyObjectForAssets {
                 String command = new String(awsCommand);
                 ProjectLogger.log("Download Url : " + downloadUrl, LoggerEnum.INFO.name());
                 String commandToRun = getS3UrlForAssets(command, downloadUrl, mime);
+                ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
                 if(!commandToRun.isEmpty())
                     status.add(executor.submit(new CallableThread(commandToRun)));
             }
@@ -126,14 +129,14 @@ public class CopyObjectForAssets {
             return "";
         } else if(notMime.contains(mimeType)) {
             return "";
-        } else if(downloadUrl.startsWith("https://sl-content-migration.s3.amazonaws.com/assets/")) {
+        } else if(downloadUrl.startsWith(oldS3Url+"/assets/")) {
             return "";
-        } else if(downloadUrl.startsWith("https://sl-content-migration.s3.amazonaws.com/content/assets/")) {
+        } else if(downloadUrl.startsWith(oldS3Url+"/content/assets/")) {
             return "";
-        } else if(!downloadUrl.startsWith("https://sl-content-migration.s3.amazonaws.com/")) {
+        } else if(!downloadUrl.startsWith(oldS3Url+"/")) {
             return "";
         } else {
-            String contentSubUrl = downloadUrl.replaceAll("https://sl-content-migration.s3.amazonaws.com/","");
+            String contentSubUrl = downloadUrl.replaceAll((oldS3Url+"/"),"");
             int index = contentSubUrl.indexOf("/", contentSubUrl.indexOf("/") + 1);
             if(contentSubUrl.startsWith("content/do_")) {
 //                ProjectLogger.log("1" + contentSubUrl);
@@ -240,7 +243,7 @@ public class CopyObjectForAssets {
         @Override
         public Boolean call() {
             try {
-                ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
+//                ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
                 return runS3ShellCommand(commandToRun);
 //                return true;
 

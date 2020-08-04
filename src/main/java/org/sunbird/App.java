@@ -10,6 +10,7 @@ import org.sunbird.publish.Neo4jLiveContentPublisher;
 import org.sunbird.s3.CopyObject;
 import org.sunbird.s3.CopyObjectForAssets;
 import org.sunbird.util.Progress;
+import org.sunbird.util.PropertiesCache;
 import org.sunbird.util.logger.LoggerEnum;
 import org.sunbird.util.logger.ProjectLogger;
 //import org.sunbird.s3.CopyObjectThroughSDK;
@@ -109,48 +110,53 @@ public class App
                     int size = 100;
                     String fileName = "Error_Asset_" + System.currentTimeMillis();
                     Session session = null;
-                    try {
-                        List<String> contentFailed;
-                        int contentSize = operation.getCountForContentDataForAssets();
+                    String oldS3Url = PropertiesCache.getInstance().getProperty("neo4j_old_s3url");
+                    if(oldS3Url== null || oldS3Url.isEmpty()) {
+                        try {
+                            List<String> contentFailed;
+                            int contentSize = operation.getCountForContentDataForAssets();
 
-                        if (contentSize > 0) {
-                            long startTime = System.currentTimeMillis();
-                            while (status) {
-                                session = ConnectionManager.getSession();
-                                Map<String, String> contentDataForAssets = operation.getContentDataForAssets(skip, size, session);
-                                contentFailed = s3CopyAssets.copyS3AssetDataForContentId(contentDataForAssets);
-                                if(contentFailed.size() > 0) {
-                                    appendToFile(contentFailed, fileName);
-                                    failStatus = true;
+                            if (contentSize > 0) {
+                                long startTime = System.currentTimeMillis();
+                                while (status) {
+                                    session = ConnectionManager.getSession();
+                                    Map<String, String> contentDataForAssets = operation.getContentDataForAssets(skip, size, session);
+                                    contentFailed = s3CopyAssets.copyS3AssetDataForContentId(contentDataForAssets, oldS3Url);
+                                    if (contentFailed.size() > 0) {
+                                        appendToFile(contentFailed, fileName);
+                                        failStatus = true;
+                                    }
+
+                                    Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
+
+                                    skip += size;
+
+                                    if (skip >= contentSize) {
+                                        status = false;
+                                    }
+                                    session.close();
                                 }
+                            } else {
+                                ProjectLogger.log("No data of type Content or ContentImage in Neo4j.", LoggerEnum.INFO.name());
+                            }
 
-                                Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
-
-                                skip += size;
-
-                                if(skip >= contentSize) {
-                                    status = false;
-                                }
+                            if (failStatus) {
+                                ProjectLogger.log("", LoggerEnum.INFO.name());
+                                ProjectLogger.log("Failed for some content", LoggerEnum.INFO.name());
+                                ProjectLogger.log("Please check the Error File", LoggerEnum.INFO.name());
+                            } else {
+                                ProjectLogger.log("Process completed Successfully for all Content of Neo4j.", LoggerEnum.INFO.name());
+                            }
+                        } catch (Exception e) {
+                            ProjectLogger.log("Failed to fetch data from Neo4j due to : " + e.getMessage(), e, LoggerEnum.ERROR.name());
+//                        e.printStackTrace();
+                        } finally {
+                            if (session != null) {
                                 session.close();
                             }
-                        } else {
-                            ProjectLogger.log("No data of type Content or ContentImage in Neo4j.", LoggerEnum.INFO.name());
                         }
-
-                        if(failStatus) {
-                            ProjectLogger.log("", LoggerEnum.INFO.name());
-                            ProjectLogger.log("Failed for some content", LoggerEnum.INFO.name());
-                            ProjectLogger.log("Please check the Error File", LoggerEnum.INFO.name());
-                        } else {
-                            ProjectLogger.log("Process completed Successfully for all Content of Neo4j.", LoggerEnum.INFO.name());
-                        }
-                    } catch (Exception e) {
-                        ProjectLogger.log("Failed to fetch data from Neo4j due to : " + e.getMessage(), e, LoggerEnum.ERROR.name());
-//                        e.printStackTrace();
-                    } finally {
-                        if(session != null) {
-                            session.close();
-                        }
+                    } else {
+                        ProjectLogger.log("Please provide the old S3 Bucket Url.", LoggerEnum.ERROR.name());
                     }
                     break;
                 case 6:
