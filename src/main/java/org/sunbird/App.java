@@ -2,7 +2,7 @@ package org.sunbird;
 
 import org.neo4j.driver.v1.Session;
 import org.sunbird.cassandra.DeleteOperation;
-import org.sunbird.hierarchy.Neo4jToCassandraHierarchyManager;
+//import org.sunbird.hierarchy.Neo4jToCassandraHierarchyManager;
 import org.sunbird.neo4j.ConnectionManager;
 import org.sunbird.neo4j.ContentS3UrlUpdater;
 import org.sunbird.neo4j.SearchOperation;
@@ -38,8 +38,8 @@ public class App
             ProjectLogger.log("Enter 6 to update the S3 Urls of all the Neo4j Contents.", LoggerEnum.INFO.name());
             ProjectLogger.log("Enter 7 to Republish all Live contents of Neo4j.", LoggerEnum.INFO.name());
             ProjectLogger.log("Enter 8 to Republish specific content ids of Neo4j.", LoggerEnum.INFO.name());
-            ProjectLogger.log("Enter 9 to Migrate Hierarchy of Contents form Cassandra to Neo4j.", LoggerEnum.INFO.name());
-            ProjectLogger.log("Enter 10 to EXIT", LoggerEnum.INFO.name());
+//            ProjectLogger.log("Enter 9 to Migrate Hierarchy of Contents form Cassandra to Neo4j.", LoggerEnum.INFO.name());
+            ProjectLogger.log("Enter 9 to EXIT", LoggerEnum.INFO.name());
 //        ProjectLogger.log("Enter 5 to perform data migration for specific Content Ids Using SDK");
             Scanner scanner = new Scanner(System.in);
 
@@ -203,11 +203,11 @@ public class App
                         ProjectLogger.log("Please enter some ids as comma separated values.", LoggerEnum.INFO.name());
                     }
                     break;
+//                case 9:
+//                    Neo4jToCassandraHierarchyManager hierarchyManager = new Neo4jToCassandraHierarchyManager();
+//                    hierarchyManager.migrateAllContentsHierarchy();
+//                    break;
                 case 9:
-                    Neo4jToCassandraHierarchyManager hierarchyManager = new Neo4jToCassandraHierarchyManager();
-                    hierarchyManager.migrateAllContentsHierarchy();
-                    break;
-                case 10:
                     ProjectLogger.log("", LoggerEnum.INFO.name());
                     ProjectLogger.log("Bye Bye !!", LoggerEnum.INFO.name());
                     check = false;

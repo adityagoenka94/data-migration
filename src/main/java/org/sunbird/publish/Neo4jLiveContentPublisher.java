@@ -1,19 +1,24 @@
 package org.sunbird.publish;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.neo4j.driver.v1.Session;
 import org.sunbird.neo4j.SearchOperation;
 import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
 import org.sunbird.util.logger.LoggerEnum;
 import org.sunbird.util.logger.ProjectLogger;
+import sun.misc.IOUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -247,8 +252,15 @@ public class Neo4jLiveContentPublisher {
                 }
                 httpPost.setHeader("x-authenticated-user-token", authToken);
                 CloseableHttpResponse response = client.execute(httpPost);
+                Thread.sleep(1000);
                 int apiStatus = response.getStatusLine().getStatusCode();
+//                HttpEntity responseEntity = response.getEntity();
+//                String responseString = EntityUtils.toString(responseEntity, "UTF-8");
+                String responseString = new BasicResponseHandler().handleResponse(response);
+
                 ProjectLogger.log("apiStatus for Content id "+ id + " is : " + apiStatus, LoggerEnum.INFO.name());
+                ProjectLogger.log("apiResponse for Content id "+ id + " is : " + responseString, LoggerEnum.INFO.name());
+
                 if (apiStatus == 200) {
                     return "true";
                 } else {

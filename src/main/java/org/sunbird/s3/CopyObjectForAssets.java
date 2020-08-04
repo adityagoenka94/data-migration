@@ -27,7 +27,7 @@ public class CopyObjectForAssets {
 
         String awsCommand = getAwsCommandForAssetMigration();
 //        ProjectLogger.log("AWS build command : " + awsCommand);
-        ExecutorService executor = Executors.newFixedThreadPool(10);
+        ExecutorService executor = Executors.newFixedThreadPool(20);
         if(awsCommand != null) {
             List<Future<Boolean>> status = new ArrayList<>();
             for (Map.Entry<String, String> entry : contentData.entrySet()) {
