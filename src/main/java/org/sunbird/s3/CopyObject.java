@@ -138,8 +138,8 @@ public class CopyObject {
             result = getResult(process);
             int exitVal = process.waitFor();
             if(exitVal == 0) {
-//                boolean status = verifyCurrentContentMigration(result, currentContentIds);
-                return true;
+                boolean status = verifyCurrentContentMigration(result, currentContentIds);
+                return status;
             }  else {
                 throw new Exception("Command terminated abnormally : " + result);
             }
