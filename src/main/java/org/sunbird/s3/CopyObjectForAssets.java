@@ -26,7 +26,7 @@ public class CopyObjectForAssets {
     public List<String> copyS3AssetDataForContentId(Map<String, String> contentData) {
 
         String awsCommand = getAwsCommandForAssetMigration();
-//        ProjectLogger.log("AWS build command : " + awsCommand);
+        ProjectLogger.log("AWS build command : " , awsCommand);
         ExecutorService executor = Executors.newFixedThreadPool(20);
         if(awsCommand != null) {
             List<Future<Boolean>> status = new ArrayList<>();
@@ -34,7 +34,7 @@ public class CopyObjectForAssets {
                 String downloadUrl = entry.getKey();
                 String mime = entry.getValue();
                 String command = new String(awsCommand);
-//                ProjectLogger.log("Download Url : " + downloadUrl);
+                ProjectLogger.log("Download Url : " + downloadUrl, LoggerEnum.INFO.name());
                 String commandToRun = getS3UrlForAssets(command, downloadUrl, mime);
                 if(!commandToRun.isEmpty())
                     status.add(executor.submit(new CallableThread(commandToRun)));
@@ -240,7 +240,7 @@ public class CopyObjectForAssets {
         @Override
         public Boolean call() {
             try {
-//                ProjectLogger.log("Command : " + commandToRun);
+                ProjectLogger.log("Command : " + commandToRun, LoggerEnum.INFO.name());
                 return runS3ShellCommand(commandToRun);
 //                return true;
 
