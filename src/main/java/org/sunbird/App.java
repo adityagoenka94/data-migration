@@ -115,8 +115,8 @@ public class App
 
                         if (contentSize > 0) {
                             long startTime = System.currentTimeMillis();
-                            session = ConnectionManager.getSession();
                             while (status) {
+                                session = ConnectionManager.getSession();
                                 Map<String, String> contentDataForAssets = operation.getContentDataForAssets(skip, size, session);
                                 contentFailed = s3CopyAssets.copyS3AssetDataForContentId(contentDataForAssets);
                                 if(contentFailed.size() > 0) {
@@ -131,6 +131,7 @@ public class App
                                 if(skip >= contentSize) {
                                     status = false;
                                 }
+                                session.close();
                             }
                         } else {
                             ProjectLogger.log("No data of type Content or ContentImage in Neo4j.", LoggerEnum.INFO.name());
