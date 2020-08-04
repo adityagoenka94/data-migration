@@ -182,7 +182,7 @@ public class CopyObjectForAssets {
             if(exitVal == 0) {
 //                ProjectLogger.log("received exit code 0");
 //                result = getResult(process);
-//                boolean status = verifyCurrentContentMigration(result);
+                boolean status = verifyCurrentContentMigration(result);
                 return true;
             }  else {
 //                ProjectLogger.log("received exit code not 0");
@@ -218,14 +218,14 @@ public class CopyObjectForAssets {
         return result.toString();
     }
 
-//    private boolean verifyCurrentContentMigration(String result, String contentId) {
-//        if (result.contains(contentId)) {
-//            return true;
-//        } else {
+    private boolean verifyCurrentContentMigration(String result) {
+        if (!result.isEmpty() && result !=null) {
+            return true;
+        } else {
 //            failedForContent.add(contentId);
-//            return false;
-//        }
-//    }
+            return false;
+        }
+    }
 
 
     class CallableThread implements Callable<Boolean> {
