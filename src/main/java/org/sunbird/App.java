@@ -111,7 +111,7 @@ public class App
                     String fileName = "Error_Asset_" + System.currentTimeMillis();
                     Session session = null;
                     String oldS3Url = PropertiesCache.getInstance().getProperty("neo4j_old_s3url");
-                    if(oldS3Url== null || oldS3Url.isEmpty()) {
+                    if(oldS3Url!= null && !oldS3Url.isEmpty()) {
                         try {
                             List<String> contentFailed;
                             int contentSize = operation.getCountForContentDataForAssets();

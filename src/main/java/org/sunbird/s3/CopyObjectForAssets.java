@@ -28,7 +28,7 @@ public class CopyObjectForAssets {
 
         this.oldS3Url = oldS33Url;
         String awsCommand = getAwsCommandForAssetMigration();
-        ProjectLogger.log("AWS build command : " , awsCommand);
+        ProjectLogger.log("AWS build command : " + awsCommand, LoggerEnum.INFO.name());
         ExecutorService executor = Executors.newFixedThreadPool(20);
         if(awsCommand != null) {
             List<Future<Boolean>> status = new ArrayList<>();
