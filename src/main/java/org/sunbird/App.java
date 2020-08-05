@@ -107,7 +107,7 @@ public class App
                     boolean failStatus = false;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
                     int skip = 0;
-                    int size = 100;
+                    int size = 500;
                     String fileName = "Error_Asset_" + System.currentTimeMillis();
                     Session session = null;
                     String oldS3Url = PropertiesCache.getInstance().getProperty("neo4j_old_s3url");

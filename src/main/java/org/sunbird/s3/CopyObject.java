@@ -27,7 +27,8 @@ public class CopyObject {
 
         String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
         ProjectLogger.log("AWS build command : " + awsCommand, LoggerEnum.INFO.name());
-        ExecutorService executor = Executors.newFixedThreadPool(10);
+        int pool_size = Integer.parseInt(propertiesCache.getProperty("thread_pool_size"));
+        ExecutorService executor = Executors.newFixedThreadPool(pool_size);
         if(awsCommand != null) {
             int total = contentData.size();
             long startTime = System.currentTimeMillis();
@@ -224,7 +225,8 @@ public class CopyObject {
         try {
             String awsCommand = getAwsCommandForContentIdFolderMigrationV2();
             ProjectLogger.log("AWS build command : " + awsCommand, LoggerEnum.INFO.name());
-            ExecutorService executor = Executors.newFixedThreadPool(10);
+            int pool_size = Integer.parseInt(propertiesCache.getProperty("thread_pool_size"));
+            ExecutorService executor = Executors.newFixedThreadPool(pool_size);
             if (awsCommand != null) {
 //            int total = contentData.size();
                 long startTime = System.currentTimeMillis();
