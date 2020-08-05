@@ -106,8 +106,9 @@ public class App
                     boolean status = true;
                     boolean failStatus = false;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
-                    int skip = 0;
-                    int size = 100;
+                    int skip = 170000;
+                    int initialSkip = 170000;
+                    int size = 200;
                     String fileName = "Error_Asset_" + System.currentTimeMillis();
                     Session session = null;
                     String oldS3Url = PropertiesCache.getInstance().getProperty("neo4j_old_s3url");
@@ -127,7 +128,7 @@ public class App
                                         failStatus = true;
                                     }
 
-                                    Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
+                                    Progress.printProgressNew(startTime, (contentSize - initialSkip), (skip - initialSkip + contentDataForAssets.size()), initialSkip);
 
                                     skip += size;
 
