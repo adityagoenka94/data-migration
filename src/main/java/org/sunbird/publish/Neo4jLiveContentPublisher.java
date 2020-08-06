@@ -1,24 +1,19 @@
 package org.sunbird.publish;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-import org.neo4j.driver.v1.Session;
 import org.sunbird.neo4j.SearchOperation;
 import org.sunbird.util.Progress;
 import org.sunbird.util.PropertiesCache;
 import org.sunbird.util.logger.LoggerEnum;
 import org.sunbird.util.logger.ProjectLogger;
-import sun.misc.IOUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,48 +27,50 @@ public class Neo4jLiveContentPublisher {
     String authorization;
     String authToken;
     List<Future<String>> status = new ArrayList<>();
+    String contentType[] = new String[]{"Resource", "Collection", "Course"};
 
 
     public void publishAllContents() {
 
             SearchOperation searchOperation = new SearchOperation();
 
-            boolean status = true;
             boolean failStatus = false;
-            int skip = 0;
             int size = 100;
             String fileName = "Error_Publish_" + System.currentTimeMillis();
-        ExecutorService executor = Executors.newFixedThreadPool(5);
-        Session session = null;
+        ExecutorService executor = Executors.newFixedThreadPool(2);
             try {
 
                 verifyProperties();
+                long startTime = System.currentTimeMillis();
 
-                List<String> contentFailed;
-                int contentSize = searchOperation.getAllLiveContentCount();
-                ProjectLogger.log("Count of data to Publish : " + contentSize, LoggerEnum.INFO.name());
+                for(String contentTypeIterator : contentType) {
+                    int skip = 0;
+                    boolean status = true;
+                    List<String> contentFailed;
+                    int contentSize = searchOperation.getAllLiveContentCount(contentTypeIterator);
+                    ProjectLogger.log("Count of data to Publish for resourceType "+ contentTypeIterator + " is " + contentSize, LoggerEnum.INFO.name());
 
-                if (contentSize > 0) {
-                    long startTime = System.currentTimeMillis();
-                    while (status) {
-                        List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size);
-                        ProjectLogger.log(contentDataForAssets.toString(), LoggerEnum.INFO.name());
-                        contentFailed = publishContent(contentDataForAssets, executor);
-                        if (contentFailed.size() > 0) {
-                            appendToFile(contentFailed, fileName);
-                            failStatus = true;
+                    if (contentSize > 0) {
+                        while (status) {
+                            List<Object> contentDataForAssets = searchOperation.getAllLiveContentIds(skip, size, contentTypeIterator);
+                            ProjectLogger.log(contentDataForAssets.toString(), LoggerEnum.INFO.name());
+                            contentFailed = publishContent(contentDataForAssets, executor);
+                            if (contentFailed.size() > 0) {
+                                appendToFile(contentFailed, fileName);
+                                failStatus = true;
+                            }
+
+                            Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
+
+                            skip += size;
+
+                            if (skip >= contentSize) {
+                                status = false;
+                            }
                         }
-
-                        Progress.printProgress(startTime, contentSize, (skip + contentDataForAssets.size()));
-
-                        skip += size;
-
-                        if (skip >= contentSize) {
-                            status = false;
-                        }
+                    } else {
+                        ProjectLogger.log("No Live data of Content in Neo4j.", LoggerEnum.INFO.name());
                     }
-                } else {
-                    ProjectLogger.log("No Live data of Content in Neo4j.", LoggerEnum.INFO.name());
                 }
 
                 if (failStatus) {
@@ -252,7 +249,6 @@ public class Neo4jLiveContentPublisher {
                 }
                 httpPost.setHeader("x-authenticated-user-token", authToken);
                 CloseableHttpResponse response = client.execute(httpPost);
-                Thread.sleep(1000);
                 int apiStatus = response.getStatusLine().getStatusCode();
 //                HttpEntity responseEntity = response.getEntity();
 //                String responseString = EntityUtils.toString(responseEntity, "UTF-8");

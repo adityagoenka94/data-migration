@@ -141,15 +141,16 @@ public class SearchOperation {
     }
 
 
-    public int getAllLiveContentCount() {
+    public int getAllLiveContentCount(String contentType) {
 
         int liveContentCount = 0;
         Session session = null;
-        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.visibility='Default' WITH count(*) AS COUNT return COUNT;";
+        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.visibility='Default' AND n.contentType='%s' WITH count(*) AS COUNT return COUNT;";
+        String formattedQuery = String.format(new String(query), contentType);
         try {
             session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
-            StatementResult result = session.beginTransaction().run(query);
+            StatementResult result = session.beginTransaction().run(formattedQuery);
             while (result.hasNext()) {
                 Record record = result.next();
                 liveContentCount = record.get("COUNT").asInt();
@@ -166,11 +167,11 @@ public class SearchOperation {
         return liveContentCount;
     }
 
-    public List getAllLiveContentIds(int skip, int size) {
+    public List getAllLiveContentIds(int skip, int size, String contentType) {
         List<String> ids = new ArrayList<>();
         Session session = ConnectionManager.getSession();
-        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.visibility='Default' return n.IL_UNIQUE_ID AS contentids ORDER BY ORDER BY n.contentType DESC,id(n) SKIP %s LIMIT %s;";
-        String formattedQuery = String.format(new String(query), skip, size);
+        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.visibility='Default' AND n.contentType='%s' return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
+        String formattedQuery = String.format(new String(query), contentType, skip, size);
         try {
             StatementResult result = session.beginTransaction().run(formattedQuery);
             while (result.hasNext()) {
