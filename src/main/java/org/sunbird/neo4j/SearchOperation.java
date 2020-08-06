@@ -145,7 +145,7 @@ public class SearchOperation {
 
         int liveContentCount = 0;
         Session session = null;
-        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.channel='0124487522476933120' AND n.visibility='Default' WITH count(*) AS COUNT return COUNT;";
+        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.visibility='Default' WITH count(*) AS COUNT return COUNT;";
         try {
             session = ConnectionManager.getSession();
 //                StatementResult result = session.run(query);
@@ -169,7 +169,7 @@ public class SearchOperation {
     public List getAllLiveContentIds(int skip, int size) {
         List<String> ids = new ArrayList<>();
         Session session = ConnectionManager.getSession();
-        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.channel='0124487522476933120' AND n.visibility='Default' return n.IL_UNIQUE_ID AS contentids ORDER BY id(n) SKIP %s LIMIT %s;";
+        String query = "MATCH (n) WHERE n.status IN ['Live'] AND NOT n.contentType IN ['Asset'] AND n.visibility='Default' return n.IL_UNIQUE_ID AS contentids ORDER BY id(n),n.contentType DESC SKIP %s LIMIT %s;";
         String formattedQuery = String.format(new String(query), skip, size);
         try {
             StatementResult result = session.beginTransaction().run(formattedQuery);
