@@ -106,7 +106,7 @@ public class App
                     boolean status = true;
                     boolean failStatus = false;
                     CopyObjectForAssets s3CopyAssets = new CopyObjectForAssets();
-                    int skip = 255000;
+                    int skip = 0;
                     int size = 500;
                     String fileName = "Error_Asset_" + System.currentTimeMillis();
                     Session session = null;
